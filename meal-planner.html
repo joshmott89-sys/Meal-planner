@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tilly's Meal Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --surface2: #1c1c1c;
+    --border: rgba(255,255,255,0.08);
+    --amber: #f59e0b;
+    --amber-dim: rgba(245,158,11,0.15);
+    --text: #e2e8f0;
+    --text-muted: #64748b;
+    --green: #34d399;
+    --red: #f87171;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    min-height: 100vh;
+    padding: 24px 16px 80px;
+  }
+  .max-w { max-width: 480px; margin: 0 auto; }
+
+  /* ── Header ── */
+  .header { text-align: center; margin-bottom: 32px; padding-top: 8px; }
+  .header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 8vw, 2.6rem);
+    color: var(--amber);
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+  }
+  .header p { color: var(--text-muted); margin-top: 6px; font-size: 13px; }
+
+  /* ── Glass card ── */
+  .card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 20px;
+    margin-bottom: 16px;
+    backdrop-filter: blur(12px);
+  }
+
+  /* ── Section label ── */
+  .section-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  /* ── API Key input ── */
+  .api-row { display: flex; gap: 8px; align-items: stretch; }
+  .api-row input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    padding: 10px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+  }
+  .api-row input:focus { outline: none; border-color: var(--amber); }
+  .api-save {
+    background: var(--amber-dim);
+    border: 1px solid var(--amber);
+    color: var(--amber);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .api-save:hover { background: var(--amber); color: #000; }
+
+  /* ── Upload zone ── */
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 14px;
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+  }
+  .upload-zone:hover, .upload-zone.drag { border-color: var(--amber); background: var(--amber-dim); }
+  .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .upload-zone .icon { font-size: 2rem; margin-bottom: 8px; }
+  .upload-zone p { color: var(--text-muted); font-size: 13px; }
+  .upload-zone .preview { max-width: 100%; border-radius: 10px; margin-top: 12px; max-height: 180px; object-fit: cover; }
+
+  /* ── Inputs / sliders ── */
+  label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
+  input[type=range] {
+    width: 100%; accent-color: var(--amber); cursor: pointer;
+  }
+  .range-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    padding: 12px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    resize: vertical;
+    min-height: 70px;
+  }
+  textarea:focus { outline: none; border-color: var(--amber); }
+
+  /* ── Focus tags ── */
+  .tag-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tag {
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.15s;
+    background: var(--surface2);
+  }
+  .tag.active { background: var(--amber); color: #000; border-color: var(--amber); }
+
+  /* ── CTA ── */
+  .btn-primary {
+    width: 100%;
+    background: var(--amber);
+    color: #000;
+    border: none;
+    border-radius: 14px;
+    padding: 16px;
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    letter-spacing: 0.3px;
+  }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── Loader ── */
+  .loader { text-align: center; padding: 40px 20px; }
+  .loader .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--amber);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loader p { color: var(--text-muted); font-size: 13px; }
+
+  /* ── Meal card ── */
+  .meal-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    overflow: hidden;
+    margin-bottom: 14px;
+    transition: border-color 0.2s;
+  }
+  .meal-card:hover { border-color: rgba(255,255,255,0.15); }
+  .meal-card-body { padding: 18px 18px 14px; }
+  .meal-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .meal-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.15rem;
+    color: #fff;
+    line-height: 1.3;
+  }
+  .meal-title a { color: inherit; text-decoration: none; }
+  .meal-title a:hover { color: var(--amber); }
+  .swap-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  .swap-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .swap-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .meal-desc { color: var(--text-muted); font-size: 13px; margin: 8px 0 10px; line-height: 1.5; }
+  .meal-macros {
+    display: inline-block;
+    background: var(--amber-dim);
+    color: var(--amber);
+    border-radius: 6px;
+    padding: 3px 9px;
+    font-size: 11px;
+    font-weight: 500;
+    margin-bottom: 10px;
+  }
+  .fridge-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .fridge-tag {
+    background: rgba(52,211,153,0.1);
+    color: var(--green);
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 11px;
+  }
+  .swap-spinner {
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.2);
+    border-top-color: var(--amber);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  /* ── Shopping list ── */
+  .shop-section { margin-bottom: 20px; }
+  .shop-category {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 10px;
+  }
+  .shop-item { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .shop-item:last-child { border-bottom: none; }
+  .shop-item input[type=checkbox] { accent-color: var(--amber); width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; }
+  .shop-item label { font-size: 14px; cursor: pointer; flex: 1; user-select: none; }
+  .shop-item input:checked + label { text-decoration: line-through; color: var(--text-muted); }
+
+  /* ── Download ── */
+  .download-btn {
+    display: block;
+    width: 100%;
+    background: linear-gradient(135deg, #d97706, #f59e0b);
+    color: #000;
+    border: none;
+    border-radius: 14px;
+    padding: 16px;
+    font-family: 'Playfair Display', serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    text-align: center;
+    cursor: pointer;
+    text-decoration: none;
+    margin-top: 8px;
+    transition: opacity 0.2s;
+  }
+  .download-btn:hover { opacity: 0.85; }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed;
+    bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-size: 13px;
+    transition: transform 0.3s;
+    z-index: 999;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.error { border-color: var(--red); color: var(--red); }
+  .toast.success { border-color: var(--green); color: var(--green); }
+
+  /* ── Error message ── */
+  .error-box {
+    background: rgba(248,113,113,0.08);
+    border: 1px solid rgba(248,113,113,0.3);
+    border-radius: 12px;
+    padding: 14px 16px;
+    color: var(--red);
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+
+  /* ── Section divider ── */
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    color: var(--amber);
+    margin: 32px 0 16px;
+  }
+
+  /* ── Hidden ── */
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="max-w">
+
+  <div class="header">
+    <h1>✦ Meal Planner</h1>
+    <p>Powered by Gemini · RecipeTin Eats inspired</p>
+  </div>
+
+  <!-- API KEY -->
+  <div class="card">
+    <div class="section-label">Gemini API Key</div>
+    <div class="api-row">
+      <input type="password" id="apiKey" placeholder="AIza…" autocomplete="off">
+      <button class="api-save" onclick="saveKey()">Save</button>
+    </div>
+    <p style="font-size:11px;color:var(--text-muted);margin-top:8px;">Stored in localStorage only. <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--amber);">Get a key →</a></p>
+  </div>
+
+  <!-- FRIDGE PHOTO -->
+  <div class="card">
+    <div class="section-label">Fridge / Pantry Photo</div>
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="handlePhoto(this)">
+      <div id="uploadPlaceholder">
+        <div class="icon">📸</div>
+        <p>Tap to take a photo or upload</p>
+      </div>
+      <img id="photoPreview" class="preview hidden" alt="Fridge photo">
+    </div>
+  </div>
+
+  <!-- CONFIG -->
+  <div class="card">
+    <div class="section-label">Plan Settings</div>
+
+    <label>Meals this week: <strong id="mealCountLabel">5</strong></label>
+    <input type="range" id="mealCount" min="1" max="7" value="5" oninput="document.getElementById('mealCountLabel').textContent=this.value">
+    <div class="range-row"><span>1</span><span>7</span></div>
+
+    <div style="margin-top:18px;">
+      <label style="margin-bottom:10px;">Focus goals</label>
+      <div class="tag-row" id="focusTags">
+        <div class="tag" data-val="High Protein" onclick="toggleTag(this)">💪 High Protein</div>
+        <div class="tag" data-val="High Iron" onclick="toggleTag(this)">🩸 High Iron</div>
+        <div class="tag" data-val="Hidden Veggies" onclick="toggleTag(this)">🥦 Hidden Veggies</div>
+        <div class="tag" data-val="Quick 20-min" onclick="toggleTag(this)">⚡ Quick 20-min</div>
+      </div>
+    </div>
+
+    <div style="margin-top:18px;">
+      <label>What's hiding in the back of the fridge?</label>
+      <textarea id="fridgeText" placeholder="e.g. half a block of feta, some wilting spinach, leftover rice…" rows="3"></textarea>
+    </div>
+  </div>
+
+  <!-- GENERATE -->
+  <button class="btn-primary" id="generateBtn" onclick="generatePlan()">✦ Generate This Week's Plan</button>
+
+  <!-- ERROR -->
+  <div class="error-box hidden" id="errorBox"></div>
+
+  <!-- LOADER -->
+  <div class="loader hidden" id="loader">
+    <div class="spinner"></div>
+    <p>Consulting the culinary architect…</p>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results" class="hidden">
+    <h2 class="section-title">This Week's Menu</h2>
+    <div id="mealCards"></div>
+
+    <h2 class="section-title">Woolworths List</h2>
+    <div class="card" id="shoppingList"></div>
+
+    <button class="download-btn" onclick="downloadHTML()">⬇ Download Grocery List</button>
+  </div>
+
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────
+let state = {
+  plan: null,      // { meals: [...], shopping_list: {...} }
+  photoB64: null,
+  photoMime: 'image/jpeg'
+};
+
+const SYSTEM_PROMPT = `You are a premium culinary architect designing a weekly meal plan for a family of four.
+Analyze the user's fridge/pantry image and their dietary constraints.
+Your recipe recommendations MUST be heavily inspired by the style of the Australian food blog 'RecipeTin Eats'.
+You must respond ONLY with a valid JSON object matching this exact schema:
+{
+  "meals": [
+    {
+      "id": "unique-string-identifier",
+      "title": "Recipe Title",
+      "recipetin_search_url": "https://www.google.com/search?q=site:recipetineats.com+[hyphenated-recipe-name]",
+      "description": "Short, appetizing description.",
+      "fridge_items_used": ["Item 1", "Item 2"],
+      "macros": "Est. 500 kcal | 35g Protein",
+      "image_search_keywords": "food photography styling keywords"
+    }
+  ],
+  "shopping_list": {
+    "Fresh Produce": ["2x Avocados", "1kg Carrots"],
+    "Meat & Seafood": ["500g Chicken Thighs"],
+    "Dairy & Eggs": ["2L Full Cream Milk"],
+    "Deli & Bakery": [],
+    "Pantry & Aisle": ["Arborio Rice", "Passata"],
+    "Frozen": []
+  }
+}`;
+
+// ─── INIT ────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('gemini_key');
+  if (saved) document.getElementById('apiKey').value = saved;
+});
+
+function saveKey() {
+  const k = document.getElementById('apiKey').value.trim();
+  if (!k) return;
+  localStorage.setItem('gemini_key', k);
+  toast('API key saved ✓', 'success');
+}
+
+function getKey() {
+  return document.getElementById('apiKey').value.trim() || localStorage.getItem('gemini_key') || '';
+}
+
+// ─── PHOTO ───────────────────────────────────────────────────
+function handlePhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  state.photoMime = file.type || 'image/jpeg';
+  const reader = new FileReader();
+  reader.onload = e => {
+    state.photoB64 = e.target.result.split(',')[1];
+    const img = document.getElementById('photoPreview');
+    img.src = e.target.result;
+    img.classList.remove('hidden');
+    document.getElementById('uploadPlaceholder').classList.add('hidden');
+  };
+  reader.readAsDataURL(file);
+}
+
+// ─── TAG TOGGLE ──────────────────────────────────────────────
+function toggleTag(el) { el.classList.toggle('active'); }
+function getActiveTags() {
+  return [...document.querySelectorAll('#focusTags .tag.active')].map(t => t.dataset.val);
+}
+
+// ─── GEMINI CALL ─────────────────────────────────────────────
+async function callGemini(messages, forceJson = true) {
+  const key = getKey();
+  if (!key) throw new Error('No API key. Enter your Gemini key above.');
+
+  const body = {
+    system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+    contents: messages,
+    generationConfig: forceJson ? { response_mime_type: 'application/json' } : {}
+  };
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+  );
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `API error ${res.status}`);
+  }
+
+  const data = await res.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  return text;
+}
+
+// ─── GENERATE FULL PLAN ──────────────────────────────────────
+async function generatePlan() {
+  const key = getKey();
+  if (!key) { showError('Please enter your Gemini API key.'); return; }
+
+  const mealCount = document.getElementById('mealCount').value;
+  const focusTags = getActiveTags();
+  const fridgeText = document.getElementById('fridgeText').value.trim();
+
+  let userText = `Please create a ${mealCount}-meal plan for a family of four.`;
+  if (focusTags.length) userText += ` Focus: ${focusTags.join(', ')}.`;
+  if (fridgeText) userText += ` Extra fridge items: ${fridgeText}.`;
+
+  const contentParts = [{ text: userText }];
+  if (state.photoB64) {
+    contentParts.unshift({
+      inline_data: { mime_type: state.photoMime, data: state.photoB64 }
+    });
+  }
+
+  setLoading(true);
+  hideError();
+
+  try {
+    const raw = await callGemini([{ role: 'user', parts: contentParts }]);
+    const plan = JSON.parse(raw);
+    state.plan = plan;
+    renderResults();
+  } catch (e) {
+    showError(e.message);
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ─── SWAP ONE MEAL ───────────────────────────────────────────
+async function swapMeal(idx) {
+  const meal = state.plan.meals[idx];
+  const fridgeText = document.getElementById('fridgeText').value.trim();
+  const focusTags = getActiveTags();
+
+  let prompt = `Replace the meal "${meal.title}" with a completely different recipe.`;
+  if (focusTags.length) prompt += ` Keep the focus: ${focusTags.join(', ')}.`;
+  if (fridgeText) prompt += ` Try to use some of: ${fridgeText}.`;
+  prompt += ` Return ONLY the single meal JSON object (same schema as before, just the object inside the meals array — no wrapper, no array brackets).`;
+
+  const btn = document.querySelector(`[data-swap="${idx}"]`);
+  btn.disabled = true;
+  btn.innerHTML = '<span class="swap-spinner"></span>';
+
+  try {
+    const raw = await callGemini([{ role: 'user', parts: [{ text: prompt }] }]);
+    // accept either a bare object or an array of 1
+    let newMeal;
+    const parsed = JSON.parse(raw);
+    newMeal = Array.isArray(parsed) ? parsed[0] : parsed;
+    state.plan.meals[idx] = newMeal;
+    renderResults();
+    toast('Meal swapped ✓', 'success');
+  } catch (e) {
+    toast('Swap failed: ' + e.message, 'error');
+    btn.disabled = false;
+    btn.innerHTML = '🔄 Swap';
+  }
+}
+
+// ─── RENDER ──────────────────────────────────────────────────
+function renderResults() {
+  if (!state.plan) return;
+
+  // Meal cards
+  const cardsEl = document.getElementById('mealCards');
+  cardsEl.innerHTML = state.plan.meals.map((m, i) => `
+    <div class="meal-card">
+      <div class="meal-card-body">
+        <div class="meal-card-top">
+          <div class="meal-title"><a href="${escH(m.recipetin_search_url)}" target="_blank">${escH(m.title)}</a></div>
+          <button class="swap-btn" data-swap="${i}" onclick="swapMeal(${i})">🔄 Swap</button>
+        </div>
+        <p class="meal-desc">${escH(m.description)}</p>
+        <div class="meal-macros">${escH(m.macros)}</div>
+        <div class="fridge-tags">
+          ${(m.fridge_items_used || []).map(fi => `<span class="fridge-tag">✓ ${escH(fi)}</span>`).join('')}
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  // Shopping list
+  const shopEl = document.getElementById('shoppingList');
+  const sl = state.plan.shopping_list || {};
+  shopEl.innerHTML = Object.entries(sl).map(([cat, items]) => {
+    if (!items || items.length === 0) return '';
+    const rows = items.map((item, j) => {
+      const id = `shop-${cat.replace(/\W/g,'')}-${j}`;
+      return `<div class="shop-item">
+        <input type="checkbox" id="${id}" onchange="saveCheckState('${id}', this.checked)">
+        <label for="${id}">${escH(item)}</label>
+      </div>`;
+    }).join('');
+    return `<div class="shop-section">
+      <div class="shop-category">${escH(cat)}</div>
+      ${rows}
+    </div>`;
+  }).join('');
+
+  // Restore checkbox states
+  shopEl.querySelectorAll('input[type=checkbox]').forEach(cb => {
+    if (localStorage.getItem('grocery_' + cb.id) === 'true') cb.checked = true;
+  });
+
+  document.getElementById('results').classList.remove('hidden');
+}
+
+function saveCheckState(id, val) {
+  localStorage.setItem('grocery_' + id, val);
+}
+
+// ─── DOWNLOAD HTML ───────────────────────────────────────────
+function downloadHTML() {
+  if (!state.plan) return;
+
+  const mealCardsHTML = state.plan.meals.map(m => `
+  <div style="background:#1c1c1c;border:1px solid rgba(255,255,255,0.08);border-radius:18px;padding:18px;margin-bottom:14px;">
+    <a href="${escH(m.recipetin_search_url)}" target="_blank" style="font-family:Georgia,serif;font-size:1.15rem;color:#fff;text-decoration:none;">${escH(m.title)}</a>
+    <p style="color:#64748b;font-size:13px;margin:8px 0 10px;line-height:1.5;">${escH(m.description)}</p>
+    <span style="background:rgba(245,158,11,0.15);color:#f59e0b;border-radius:6px;padding:3px 9px;font-size:11px;">${escH(m.macros)}</span>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;">
+      ${(m.fridge_items_used || []).map(fi => `<span style="background:rgba(52,211,153,0.1);color:#34d399;border-radius:6px;padding:3px 8px;font-size:11px;">✓ ${escH(fi)}</span>`).join('')}
+    </div>
+  </div>`).join('');
+
+  const sl = state.plan.shopping_list || {};
+  const shoppingHTML = Object.entries(sl).map(([cat, items]) => {
+    if (!items || items.length === 0) return '';
+    const rows = items.map((item, j) => {
+      const id = `shop-${cat.replace(/\W/g,'')}-${j}`;
+      return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+        <input type="checkbox" id="${id}" style="accent-color:#f59e0b;width:16px;height:16px;cursor:pointer;flex-shrink:0;">
+        <label for="${id}" style="font-size:14px;cursor:pointer;flex:1;user-select:none;">${escH(item)}</label>
+      </div>`;
+    }).join('');
+    return `<div style="margin-bottom:20px;">
+      <div style="font-size:11px;font-weight:500;letter-spacing:1.2px;text-transform:uppercase;color:#f59e0b;margin-bottom:10px;">${escH(cat)}</div>
+      ${rows}
+    </div>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Family Meal Plan &amp; Grocery List</title>
+<script src="https://cdn.tailwindcss.com"><\/script>
+<style>
+  body { background-color: #050505; color: #e2e8f0; font-family: sans-serif; }
+  .glass { background: rgba(255,255,255,0.03); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
+  input[type=checkbox]:checked + label { text-decoration: line-through; color: #64748b; }
+</style>
+</head>
+<body class="p-6 pb-24 max-w-md mx-auto">
+  <h1 class="text-3xl font-bold text-amber-400 mb-6">This Week's Menu</h1>
+  <div id="meals-container" class="space-y-4">${mealCardsHTML}</div>
+  <h2 class="text-2xl font-bold text-amber-400 mt-10 mb-4">Woolworths List</h2>
+  <div id="shopping-list" class="space-y-6 glass p-6 rounded-2xl">${shoppingHTML}</div>
+  <script>
+    document.querySelectorAll('input[type="checkbox"]').forEach(function(box) {
+      var key = 'grocery_' + box.id;
+      if (localStorage.getItem(key) === 'true') box.checked = true;
+      box.addEventListener('change', function() { localStorage.setItem(key, box.checked); });
+    });
+  <\/script>
+</body>
+</html>`;
+
+  const blob = new Blob([html], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'meal-plan.html';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────
+function escH(s) {
+  return String(s || '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function setLoading(on) {
+  document.getElementById('loader').classList.toggle('hidden', !on);
+  document.getElementById('generateBtn').disabled = on;
+  document.getElementById('generateBtn').textContent = on ? 'Generating…' : '✦ Generate This Week\'s Plan';
+  if (on) document.getElementById('results').classList.add('hidden');
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorBox');
+  el.textContent = '⚠ ' + msg;
+  el.classList.remove('hidden');
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+function hideError() { document.getElementById('errorBox').classList.add('hidden'); }
+
+let toastTimer;
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (type ? ' ' + type : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// Drag-over highlight
+const zone = document.getElementById('uploadZone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+zone.addEventListener('drop', e => {
+  e.preventDefault();
+  zone.classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) {
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    document.getElementById('photoInput').files = dt.files;
+    handlePhoto(document.getElementById('photoInput'));
+  }
+});
+</script>
+</body>
+</html>
