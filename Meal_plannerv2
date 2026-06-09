@@ -91,13 +91,13 @@
   .badge-easy { background: rgba(52,211,153,0.12); color: var(--green); }
   .badge-medium { background: rgba(245,158,11,0.12); color: var(--amber); }
   .badge-hard { background: rgba(248,113,113,0.12); color: var(--red); }
-  .badge-cost { background: rgba(16,185,129,0.12); color: #10b981; border: 1px solid rgba(16,185,129,0.3); }
+  .badge-cost { background: rgba(16,185,129,0.12); color: #10b981; }
   
   .ingredients-label { font-size: 10px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); margin: 10px 0 6px; }
   .ing-tags { display: flex; flex-wrap: wrap; gap: 5px; }
-  .ing-have   { background: rgba(52,211,153,0.1);  color: var(--green); border-radius: 6px; padding: 3px 8px; font-size: 11px; border: 1px solid rgba(52,211,153,0.2); }
-  .ing-pantry { background: rgba(245,158,11,0.12); color: var(--amber); border-radius: 6px; padding: 3px 8px; font-size: 11px; border: 1px solid rgba(245,158,11,0.2); }
-  .ing-need { background: rgba(248,113,113,0.1); color: var(--red); border-radius: 6px; padding: 3px 8px; font-size: 11px; border: 1px solid rgba(248,113,113,0.2); }
+  .ing-have   { background: rgba(52,211,153,0.1);  color: var(--green); border-radius: 6px; padding: 3px 8px; font-size: 11px; }
+  .ing-pantry { background: rgba(245,158,11,0.12); color: var(--amber); border-radius: 6px; padding: 3px 8px; font-size: 11px; }
+  .ing-need { background: rgba(248,113,113,0.1); color: var(--red); border-radius: 6px; padding: 3px 8px; font-size: 11px; }
   .swap-spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.2); border-top-color: var(--amber); border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; vertical-align: middle; }
   
   .shop-section { margin-bottom: 20px; }
@@ -108,7 +108,6 @@
   .shop-item label { font-size: 14px; cursor: pointer; flex: 1; user-select: none; }
   .shop-item input:checked + label { text-decoration: line-through; color: var(--text-muted); }
   .shop-cost { padding: 16px 0 0; border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; color: var(--amber); font-weight: 700; font-size: 15px; margin-top: 10px; }
-  .shop-cost-sub { font-size: 12px; font-weight: 400; color: var(--text-muted); margin-left: 8px; }
   
   .download-btn { display: block; width: 100%; background: linear-gradient(135deg,#d97706,#f59e0b); color: #000; border: none; border-radius: 14px; padding: 16px; font-family: 'Playfair Display', serif; font-size: 1.05rem; font-weight: 700; text-align: center; cursor: pointer; text-decoration: none; margin-top: 8px; transition: opacity 0.2s; }
   .download-btn:hover { opacity: 0.85; }
@@ -273,10 +272,9 @@ const MEAL_SCHEMA = {
     prep_time:            { type: 'STRING' },
     difficulty:           { type: 'STRING' },
     estimated_cost_aud:   { type: 'STRING' },
-    estimated_cost_per_person_aud: { type: 'STRING' },
     image_search_keywords:{ type: 'STRING' }
   },
-  required: ['id','title','recipetin_search_url','description','ingredients','macros','prep_time','difficulty','estimated_cost_aud','estimated_cost_per_person_aud']
+  required: ['id','title','recipetin_search_url','description','ingredients','macros','prep_time','difficulty','estimated_cost_aud']
 };
 
 const SHOPPING_SCHEMA = {
@@ -302,18 +300,17 @@ const FULL_SCHEMA = {
 function buildFullPrompt() {
   return 'You are a premium culinary architect designing a weekly meal plan for a family of four.\n'
     + 'Analyze the user\'s fridge/pantry image and dietary constraints.\n'
-    + 'CRITICAL INSTRUCTION: If the user provides "Focus" goals (e.g., High Iron) AND fridge items/photo, you MUST strongly prioritise using the fridge items to meet those focus goals. Do NOT discard or ignore the user\'s fridge ingredients in favor of standard focus recipes.\n'
     + 'Recommend recipes heavily inspired by the Australian food blog RecipeTin Eats by Nagi Maehashi.\n'
     + 'Only recommend recipes that genuinely exist on recipetineats.com.\n'
     + 'Construct recipetin_search_url as: https://www.google.com/search?q=site:recipetineats.com+[hyphenated-recipe-name]\n'
     + 'For prep_time use a short string like "20 mins" or "1 hr".\n'
     + 'For difficulty use exactly one of: Easy, Medium, Hard.\n'
-    + 'For estimated_cost_aud provide a short string estimating the TOTAL cost of the ingredients for the meal in AUD (e.g. "~$18").\n'
-    + 'For estimated_cost_per_person_aud provide a short string estimating the cost PER PERSON in AUD (e.g. "~$4.50").\n'
-    + 'For ingredients, classify every single ingredient into EXACTLY ONE of these three arrays:\n'
-    + '  have: items EXPLICITLY seen in the fridge photo or listed in the fridge text. If no fridge context is provided, this MUST be an empty array.\n'
-    + '  pantry: standard pantry items (butter, water, soy sauce, flour, standard spices, oil, etc.) NOT seen in the fridge.\n'
-    + '  need: non-standard items (pasta, meat, fresh produce, specific dairy, etc.) that must be purchased at the store.\n'
+    + 'For estimated_cost_aud provide a short string like "~$18" estimating the cost of the ingredients needed in AUD.\n'
+    + 'For ingredients, classify every ingredient into exactly three arrays:\n'
+    + '  have: ingredients the user already has based on their fridge photo or fridge text. If no photo or fridge text was provided this MUST be an empty array.\n'
+    + '  pantry: standard pantry staples most households always have — things like water, oil, salt, pepper, basic dried spices (paprika, cumin, oregano), sugar, flour, standard sauces (soy sauce, Worcestershire), vinegar, stock cubes.\n'
+    + '  need: all remaining ingredients the user will need to buy — fresh produce, meat, dairy, specialty items.\n'
+    + 'Every ingredient must appear in exactly one array. Short plain strings e.g. "500g chicken thighs", "2 garlic cloves".\n'
     + 'Return a full meal plan with meals array and a categorised shopping_list object.';
 }
 
@@ -322,12 +319,11 @@ const SWAP_PROMPT = 'You are a culinary expert specialising in RecipeTin Eats re
   + 'Only recommend recipes that genuinely exist on recipetineats.com.\n'
   + 'Construct recipetin_search_url as: https://www.google.com/search?q=site:recipetineats.com+[hyphenated-recipe-name]\n'
   + 'For prep_time use a short string like "20 mins". For difficulty use exactly one of: Easy, Medium, Hard.\n'
-  + 'For estimated_cost_aud provide a short string estimating the TOTAL cost in AUD (e.g. "~$18").\n'
-  + 'For estimated_cost_per_person_aud provide a short string estimating the cost PER PERSON in AUD (e.g. "~$4.50").\n'
+  + 'For estimated_cost_aud provide a short string like "~$18" estimating the cost of the ingredients needed in AUD.\n'
   + 'For ingredients, classify every ingredient into exactly three arrays:\n'
-  + '  have: items explicitly seen in the fridge photo or listed in fridge text.\n'
-  + '  pantry: standard pantry items (butter, water, soy sauce, spices, etc.).\n'
-  + '  need: non-standard items (pasta, meat, produce, etc.) that must be purchased.\n'
+  + '  have: ingredients the user already has from fridge photo or text. Empty array if no fridge context.\n'
+  + '  pantry: standard pantry staples most households always have.\n'
+  + '  need: all remaining ingredients the user needs to buy.\n'
   + 'Every ingredient must appear in exactly one array.\n'
   + 'Return ONLY a single flat JSON meal object.';
 
@@ -356,11 +352,6 @@ function hasFridgeContext() {
 
 function getRecipeUrl(meal) {
   return meal.recipetin_search_url || '';
-}
-
-function getFamilyHeadcount() {
-  const kids = parseInt(getProfile().kids) || 2;
-  return kids + 2; // Rough baseline assumption: 2 adults + kids
 }
 
 // ── PROFILE & HISTORY ────────────────────────────────────────
@@ -637,6 +628,7 @@ function renderResults(animate) {
 }
 
 function renderMealCards(animate) {
+  const fridgeContext = hasFridgeContext();
   const recentCutoff = Date.now() - 14*24*60*60*1000;
 
   document.getElementById('mealCards').innerHTML = state.plan.meals.map((m, i) => {
@@ -678,11 +670,7 @@ function renderMealCards(animate) {
       DAYS.map(d => `<button class="day-pill ${selectedDay===d?'active':''}" onclick="setDay(${i},'${d}')">${d}</button>`).join('') +
       '</div>';
       
-    // Cost Badge Rendering logic
-    let costText = '';
-    if(m.estimated_cost_aud) costText += '\uD83D\uDCB5 ' + escH(m.estimated_cost_aud);
-    if(m.estimated_cost_per_person_aud) costText += ' (' + escH(m.estimated_cost_per_person_aud) + '/pp)';
-    const costBadge = costText ? '<span class="badge badge-cost">' + costText + '</span>' : '';
+    const costBadge = m.estimated_cost_aud ? '<span class="badge badge-cost">\uD83D\uDCB5 ' + escH(m.estimated_cost_aud) + '</span>' : '';
 
     return '<div class="' + wrapCls + '" data-wrapper="' + i + '"' + delay + '>'
       + '<div class="swipe-action" onclick="swapMeal(' + i + ')"><span style="font-size:20px;">\uD83D\uDD04</span> Swap</div>'
@@ -721,9 +709,6 @@ function renderShoppingList() {
       if(!isNaN(val)) totalCost += val;
     }
   });
-  
-  const headcount = getFamilyHeadcount();
-  const ppCost = totalCost > 0 ? (totalCost / headcount) : 0;
 
   const listHTML = AISLE_ORDER.map(cat => {
     const items = sl[cat];
@@ -737,7 +722,7 @@ function renderShoppingList() {
     return '<div class="shop-section"><div class="shop-category">' + escH(cat) + '</div>' + rows + '</div>';
   }).join('');
   
-  const costHTML = totalCost > 0 ? '<div class="shop-cost"><span>Estimated Total Cost</span><span>~$' + totalCost.toFixed(0) + '<span class="shop-cost-sub">(~$' + ppCost.toFixed(2) + '/pp)</span></span></div>' : '';
+  const costHTML = totalCost > 0 ? '<div class="shop-cost"><span>Estimated Total Cost</span><span>~$' + totalCost.toFixed(0) + '</span></div>' : '';
   
   el.innerHTML = listHTML + costHTML;
   el.querySelectorAll('input[type=checkbox]').forEach(cb => {
@@ -830,23 +815,19 @@ function downloadHTML() {
       const pantry = (m.ingredients.pantry || []);
       const need   = (m.ingredients.need   || []);
       if (have.length || pantry.length || need.length) {
-        const mk = (arr, bg, col, icon, border) => arr.map(i =>
-          '<span style="background:'+bg+';color:'+col+';border-radius:6px;padding:3px 8px;font-size:11px;border:1px solid '+border+';">'+icon+' '+escH(i)+'</span>'
+        const mk = (arr, bg, col, icon) => arr.map(i =>
+          '<span style="background:'+bg+';color:'+col+';border-radius:6px;padding:3px 8px;font-size:11px;">'+icon+' '+escH(i)+'</span>'
         ).join('');
-        const tags = mk(have,  'rgba(52,211,153,0.1)',  '#34d399', '\u2713', 'rgba(52,211,153,0.2)')
-                   + mk(pantry,'rgba(245,158,11,0.12)', '#f59e0b', '\u2713', 'rgba(245,158,11,0.2)')
-                   + mk(need,  'rgba(248,113,113,0.1)', '#f87171', '\u2715', 'rgba(248,113,113,0.2)');
+        const tags = mk(have,  'rgba(52,211,153,0.1)',  '#34d399', '\u2713')
+                   + mk(pantry,'rgba(245,158,11,0.12)', '#f59e0b', '\u2713')
+                   + mk(need,  'rgba(248,113,113,0.1)', '#f87171', '\u2715');
         ingSection = '<div style="font-size:10px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:#64748b;margin:10px 0 6px;">Ingredients</div>'
           + '<div style="display:flex;flex-wrap:wrap;gap:5px;">' + tags + '</div>';
       }
     }
     
     const qrSection = '<div class="qr-wrapper" style="float:right;margin:0 0 10px 14px;"><div class="qr-code-container" data-url="' + url + '"></div></div>';
-    
-    let costText = '';
-    if(m.estimated_cost_aud) costText += '\uD83D\uDCB5 ' + escH(m.estimated_cost_aud);
-    if(m.estimated_cost_per_person_aud) costText += ' (' + escH(m.estimated_cost_per_person_aud) + '/pp)';
-    const costBadge = costText ? '<span style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.3);border-radius:6px;padding:3px 9px;font-size:11px;">' + costText + '</span>' : '';
+    const costBadge = m.estimated_cost_aud ? '<span style="background:rgba(16,185,129,0.12);color:#10b981;border-radius:6px;padding:3px 9px;font-size:11px;">\uD83D\uDCB5 ' + escH(m.estimated_cost_aud) + '</span>' : '';
 
     return dayHeading + '<div style="background:#1c1c1c;border:1px solid rgba(255,255,255,0.08);border-radius:18px;overflow:hidden;margin-bottom:14px;page-break-inside:avoid;">'
       + heroSection
@@ -873,8 +854,6 @@ function downloadHTML() {
       if(!isNaN(val)) totalCost += val;
     }
   });
-  const headcount = getFamilyHeadcount();
-  const ppCost = totalCost > 0 ? (totalCost / headcount) : 0;
 
   const shoppingHTML = AISLE_ORDER.map(cat => {
     const items = sl[cat];
@@ -890,7 +869,7 @@ function downloadHTML() {
       + rows + '</div>';
   }).join('');
 
-  const finalCostHTML = totalCost > 0 ? '<div style="padding-top:16px; border-top:1px solid rgba(255,255,255,0.1); display:flex; justify-content:space-between; color:#f59e0b; font-weight:700; font-size:15px; margin-top:-6px;"><span>Estimated Total Cost</span><span>~$' + totalCost.toFixed(0) + ' <span style="font-size:12px;font-weight:400;color:#64748b;">(~$' + ppCost.toFixed(2) + '/pp)</span></span></div>' : '';
+  const finalCostHTML = totalCost > 0 ? '<div style="padding-top:16px; border-top:1px solid rgba(255,255,255,0.1); display:flex; justify-content:space-between; color:#f59e0b; font-weight:700; font-size:15px; margin-top:-6px;"><span>Estimated Total Cost</span><span>~$' + totalCost.toFixed(0) + '</span></div>' : '';
 
   const html = '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n'
     + '<meta name="viewport" content="width=device-width,initial-scale=1.0">\n'
