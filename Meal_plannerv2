@@ -95,9 +95,9 @@
   
   .ingredients-label { font-size: 10px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); margin: 10px 0 6px; }
   .ing-tags { display: flex; flex-wrap: wrap; gap: 5px; }
-  .ing-have   { background: rgba(52,211,153,0.1);  color: var(--green); border-radius: 6px; padding: 3px 8px; font-size: 11px; border: 1px solid rgba(52,211,153,0.25); font-weight: 500; }
-  .ing-pantry { background: rgba(245,158,11,0.12); color: var(--amber); border-radius: 6px; padding: 3px 8px; font-size: 11px; border: 1px solid rgba(245,158,11,0.3); font-weight: 500; }
-  .ing-need   { background: rgba(248,113,113,0.1); color: var(--red); border-radius: 6px; padding: 3px 8px; font-size: 11px; border: 1px solid rgba(248,113,113,0.25); font-weight: 500; }
+  .ing-have   { background: rgba(52,211,153,0.1);  color: var(--green); border-radius: 6px; padding: 3px 8px; font-size: 11px; border: 1px solid rgba(52,211,153,0.2); }
+  .ing-pantry { background: rgba(245,158,11,0.12); color: var(--amber); border-radius: 6px; padding: 3px 8px; font-size: 11px; border: 1px solid rgba(245,158,11,0.2); }
+  .ing-need { background: rgba(248,113,113,0.1); color: var(--red); border-radius: 6px; padding: 3px 8px; font-size: 11px; border: 1px solid rgba(248,113,113,0.2); }
   .swap-spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.2); border-top-color: var(--amber); border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; vertical-align: middle; }
   
   .shop-section { margin-bottom: 20px; }
@@ -360,7 +360,7 @@ function getRecipeUrl(meal) {
 
 function getFamilyHeadcount() {
   const kids = parseInt(getProfile().kids) || 2;
-  return kids + 2; 
+  return kids + 2; // Rough baseline assumption: 2 adults + kids
 }
 
 // ── PROFILE & HISTORY ────────────────────────────────────────
@@ -500,13 +500,13 @@ async function callGemini(systemPrompt, messages, schema) {
   return JSON.parse(text);
 }
 
-// ── GENERATE ─────────────────────────────────────────────────
 function buildParts(text) {
   const parts = [{ text }];
   if (state.photoB64) parts.unshift({ inline_data: { mime_type: state.photoMime, data: state.photoB64 } });
   return parts;
 }
 
+// ── GENERATE ─────────────────────────────────────────────────
 async function generatePlan() {
   if (!getKey()) { showError('Please enter your Gemini API key.'); return; }
   const mealCount = document.getElementById('mealCount').value;
@@ -655,10 +655,9 @@ function renderMealCards(animate) {
       const pantry = (m.ingredients.pantry || []);
       const need   = (m.ingredients.need   || []);
       if (have.length || pantry.length || need.length) {
-        // Enforced formatting rules: Green Tick for have, Amber Tick for pantry, Red X for need
-        const haveTags   = have.map(i   => '<span class="ing-have">\u2713 ' + escH(i) + '</span>').join('');
-        const pantryTags = pantry.map(i => '<span class="ing-pantry">\u2713 ' + escH(i) + '</span>').join('');
-        const needTags   = need.map(i   => '<span class="ing-need">\u2715 ' + escH(i) + '</span>').join('');
+        const haveTags   = have.map(i   => '<span class="ing-have">'  +'\u2713 '+escH(i)+'</span>').join('');
+        const pantryTags = pantry.map(i => '<span class="ing-pantry">'+'\u2713 '+escH(i)+'</span>').join('');
+        const needTags   = need.map(i   => '<span class="ing-need">'  +'\u2715 '+escH(i)+'</span>').join('');
         ingHTML = '<div class="ingredients-label">Ingredients</div>'
           + '<div class="ing-tags">' + haveTags + pantryTags + needTags + '</div>';
       }
@@ -671,24 +670,19 @@ function renderMealCards(animate) {
       + '<img class="meal-hero" id="hero-img-' + i + '" loading="lazy" src="' + imgSrc + '" alt="" '
       + 'style="display:none;" '
       + 'onload="this.style.display=\'block\';var s=document.getElementById(\'hero-skel-' + i + '\');if(s)s.style.display=\'none\';" '
-      + 'onerror="this.style.display=\'none\';var s=document.getElementById(\'hero-skel-' + i + '\');if(s){s.style.animation=\'none\';s.style.background=\'linear-gradient(135deg,#1c1c1c 0%,#2a2010 50%,#1c1410 100%)\';}">';
+      + 'onerror="this.style.display=\'none\';var s=document.getElementById(\'hero-skel-' + i + '\');if(s){s.style.animation=\'none\';s.style.background=\'linear-gradient(135deg,#1c1c1c 0%,#2a2010 50%,#1c1410 100%)\';}">'
+      + '</div>';
 
     const selectedDay = m.day || '';
     const dayHTML = '<div class="day-selector">' +
       DAYS.map(d => `<button class="day-pill ${selectedDay===d?'active':''}" onclick="setDay(${i},'${d}')">${d}</button>`).join('') +
       '</div>';
       
-    // Cost Badge Rendering logic with gracefully handling older caches
+    // Cost Badge Rendering logic
     let costText = '';
-    if (m.estimated_cost_aud) {
-      costText += '\uD83D\uDCB5 ' + escH(m.estimated_cost_aud);
-      if (m.estimated_cost_per_person_aud) {
-        costText += ' (' + escH(m.estimated_cost_per_person_aud) + '/pp)';
-      }
-    } else {
-      costText = '\u2139 Regenerate plan for costs';
-    }
-    const costBadge = '<span class="badge badge-cost">' + costText + '</span>';
+    if(m.estimated_cost_aud) costText += '\uD83D\uDCB5 ' + escH(m.estimated_cost_aud);
+    if(m.estimated_cost_per_person_aud) costText += ' (' + escH(m.estimated_cost_per_person_aud) + '/pp)';
+    const costBadge = costText ? '<span class="badge badge-cost">' + costText + '</span>' : '';
 
     return '<div class="' + wrapCls + '" data-wrapper="' + i + '"' + delay + '>'
       + '<div class="swipe-action" onclick="swapMeal(' + i + ')"><span style="font-size:20px;">\uD83D\uDD04</span> Swap</div>'
@@ -837,11 +831,11 @@ function downloadHTML() {
       const need   = (m.ingredients.need   || []);
       if (have.length || pantry.length || need.length) {
         const mk = (arr, bg, col, icon, border) => arr.map(i =>
-          '<span style="background:'+bg+';color:'+col+';border-radius:6px;padding:3px 8px;font-size:11px;border:1px solid '+border+';font-weight:500;">'+icon+' '+escH(i)+'</span>'
+          '<span style="background:'+bg+';color:'+col+';border-radius:6px;padding:3px 8px;font-size:11px;border:1px solid '+border+';">'+icon+' '+escH(i)+'</span>'
         ).join('');
-        const tags = mk(have,  'rgba(52,211,153,0.1)',  '#34d399', '\u2713', 'rgba(52,211,153,0.25)')
-                   + mk(pantry,'rgba(245,158,11,0.12)', '#f59e0b', '\u2713', 'rgba(245,158,11,0.3)')
-                   + mk(need,  'rgba(248,113,113,0.1)', '#f87171', '\u2715', 'rgba(248,113,113,0.25)');
+        const tags = mk(have,  'rgba(52,211,153,0.1)',  '#34d399', '\u2713', 'rgba(52,211,153,0.2)')
+                   + mk(pantry,'rgba(245,158,11,0.12)', '#f59e0b', '\u2713', 'rgba(245,158,11,0.2)')
+                   + mk(need,  'rgba(248,113,113,0.1)', '#f87171', '\u2715', 'rgba(248,113,113,0.2)');
         ingSection = '<div style="font-size:10px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:#64748b;margin:10px 0 6px;">Ingredients</div>'
           + '<div style="display:flex;flex-wrap:wrap;gap:5px;">' + tags + '</div>';
       }
