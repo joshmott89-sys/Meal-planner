@@ -138,6 +138,45 @@
   @media (max-width: 480px) {
     .hide-on-mobile { display: none !important; }
   }
+
+  /* Mic button */
+  .mic-btn { position:absolute; bottom:8px; right:8px; background:transparent; border:none; padding:4px 6px; cursor:pointer; color:var(--text-muted); display:flex; align-items:center; transition:color 0.15s; border-radius:6px; }
+  .mic-btn:hover { color:var(--amber); }
+  .mic-btn.listening { color:var(--red); animation:pulse-mic 1s ease-in-out infinite; }
+  @keyframes pulse-mic { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+  /* Loader progress dots */
+  .progress-dots { display:flex; justify-content:center; gap:8px; margin-top:14px; }
+  .dot { width:8px; height:8px; border-radius:50%; background:var(--border); transition:background 0.3s; }
+  .dot.done { background:var(--amber); }
+  #loaderMsg { transition: opacity 0.15s; }
+
+  /* Delete button */
+  .del-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted); border-radius: 8px; padding: 6px 8px; font-size: 13px; cursor: pointer; transition: all 0.15s; }
+  .del-btn:hover { border-color: var(--red); color: var(--red); }
+
+  /* Add meal card */
+  .add-meal-card { border: 2px dashed var(--border); border-radius: 18px; padding: 22px; text-align: center; color: var(--text-muted); cursor: pointer; margin-bottom: 14px; transition: border-color 0.2s, color 0.2s, background 0.2s; }
+  .add-meal-card:hover { border-color: var(--amber); color: var(--amber); background: var(--amber-dim); }
+  .add-meal-card p { font-size: 13px; margin-top: 4px; }
+
+  /* Fridge accordion */
+  .fridge-accordion { margin-top: 12px; border: 1px solid rgba(52,211,153,0.2); border-radius: 10px; overflow: hidden; }
+  .fridge-accordion-header { display:flex; justify-content:space-between; align-items:center; padding: 8px 12px; font-size: 12px; color: var(--green); cursor: pointer; background: rgba(52,211,153,0.06); user-select: none; }
+  .fridge-accordion-body { display: none; flex-wrap: wrap; gap: 5px; padding: 10px 12px; }
+  .fridge-accordion-body.open { display: flex; }
+  .fridge-found-item { background: rgba(52,211,153,0.1); color: var(--green); border-radius: 6px; padding: 3px 8px; font-size: 11px; }
+
+  /* Shopping extras */
+  .badge-qty { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); padding: 2px 8px; font-size: 11px; }
+  .shop-tools { display:flex; gap:8px; margin-bottom: 16px; }
+  .shop-tools button { flex:1; }
+  .list-updating { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; display:flex; align-items:center; gap:8px; }
+
+  /* Model picker */
+  .model-row { display:flex; gap:8px; margin-top:10px; align-items:center; }
+  .model-row select { flex:1; }
+  .model-status { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
 </style>
 </head>
 <body>
@@ -155,6 +194,17 @@
       <button class="api-save" onclick="saveKey()">Save</button>
     </div>
     <p style="font-size:11px;color:var(--text-muted);margin-top:8px;">Stored in localStorage only. <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--amber);">Get a key &rarr;</a></p>
+    <div class="model-row">
+      <select class="profile-input" id="modelSelect" onchange="saveModelChoice()">
+        <option value="auto">Model: Auto (recommended)</option>
+        <option value="gemini-3.5-flash">gemini-3.5-flash</option>
+        <option value="gemini-flash-latest">gemini-flash-latest</option>
+        <option value="gemini-3.1-flash-lite">gemini-3.1-flash-lite (cheapest)</option>
+        <option value="custom">Custom model ID&hellip;</option>
+      </select>
+    </div>
+    <input class="profile-input hidden" id="customModel" placeholder="e.g. gemini-4-flash" style="margin-top:8px;" oninput="saveModelChoice()">
+    <p class="model-status" id="modelStatus"></p>
   </div>
 
   <div class="card">
@@ -260,7 +310,7 @@
     <div id="favSummaryWrapper" class="hidden" style="margin-bottom:16px;">
       <div class="card" style="margin-bottom:0; display:flex; justify-content:space-between; align-items:center; padding:12px 20px;">
         <div style="font-size:13px; line-height: 1.4;">
-          <div><span style="color:var(--red);font-size:15px;margin-right:4px;">\u2665</span> <strong id="favCountText">0</strong> favourites saved</div>
+          <div><span style="color:var(--red);font-size:15px;margin-right:4px;">&#9829;</span> <strong id="favCountText">0</strong> favourites saved</div>
           <div style="color:var(--text-muted); font-size: 11px;">(Favourited meals are prioritised in future plans)</div>
         </div>
         <button class="toast-undo" style="border:1px solid var(--border);color:var(--text-muted);" onclick="clearFavourites()">Clear all</button>
@@ -269,6 +319,11 @@
 
     <div id="mealCards"></div>
     <h2 class="section-title">Woolworths List</h2>
+    <div class="shop-tools">
+      <button class="api-save" onclick="copyShoppingList()">&#128203; Copy list</button>
+      <button class="api-save" onclick="clearTicks()">&#8634; Untick all</button>
+    </div>
+    <div class="list-updating hidden" id="listUpdating"><span class="swap-spinner"></span> Updating shopping list&hellip;</div>
     <div class="card" id="shoppingList"></div>
     <button class="download-btn" id="downloadBtn" onclick="downloadHTML()">&#8595; Download Grocery List</button>
   </div>
@@ -346,15 +401,23 @@ var MEAL_SCHEMA = {
   required: ['id','title','recipetin_search_url','description','ingredients','macros','prep_time','difficulty','estimated_cost_aud','estimated_cost_per_person_aud']
 };
 
+var SHOP_ITEM_SCHEMA = {
+  type: 'ARRAY',
+  items: {
+    type: 'OBJECT',
+    properties: { name: {type:'STRING'}, qty: {type:'STRING'}, cost: {type:'NUMBER'} },
+    required: ['name','qty','cost']
+  }
+};
 var SHOPPING_SCHEMA = {
   type: 'OBJECT',
   properties: {
-    'Fresh Produce':  { type: 'ARRAY', items: { type: 'OBJECT', properties: { name: {type:'STRING'}, cost: {type:'NUMBER'} }, required: ['name','cost'] } },
-    'Meat & Seafood': { type: 'ARRAY', items: { type: 'OBJECT', properties: { name: {type:'STRING'}, cost: {type:'NUMBER'} }, required: ['name','cost'] } },
-    'Dairy & Eggs':   { type: 'ARRAY', items: { type: 'OBJECT', properties: { name: {type:'STRING'}, cost: {type:'NUMBER'} }, required: ['name','cost'] } },
-    'Deli & Bakery':  { type: 'ARRAY', items: { type: 'OBJECT', properties: { name: {type:'STRING'}, cost: {type:'NUMBER'} }, required: ['name','cost'] } },
-    'Pantry & Aisle': { type: 'ARRAY', items: { type: 'OBJECT', properties: { name: {type:'STRING'}, cost: {type:'NUMBER'} }, required: ['name','cost'] } },
-    'Frozen':         { type: 'ARRAY', items: { type: 'OBJECT', properties: { name: {type:'STRING'}, cost: {type:'NUMBER'} }, required: ['name','cost'] } }
+    'Fresh Produce':  SHOP_ITEM_SCHEMA,
+    'Meat & Seafood': SHOP_ITEM_SCHEMA,
+    'Dairy & Eggs':   SHOP_ITEM_SCHEMA,
+    'Deli & Bakery':  SHOP_ITEM_SCHEMA,
+    'Pantry & Aisle': SHOP_ITEM_SCHEMA,
+    'Frozen':         SHOP_ITEM_SCHEMA
   },
   required: ['Fresh Produce','Meat & Seafood','Dairy & Eggs','Deli & Bakery','Pantry & Aisle','Frozen']
 };
@@ -427,8 +490,33 @@ function escH(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
+// Tick keys are scoped to the current plan, so last week's ticks don't carry over
 function checkboxKey(cat, item) {
-  return 'grocery_' + (cat+'_'+item).toLowerCase().replace(/[^a-z0-9]+/g,'-').slice(0,80);
+  return 'grocery_' + (state.currentGenId || 0) + '_' + (cat+'_'+item).toLowerCase().replace(/[^a-z0-9]+/g,'-').slice(0,80);
+}
+function clearOldTicks() {
+  const keep = 'grocery_' + (state.currentGenId || 0) + '_';
+  Object.keys(localStorage).forEach(k => {
+    if (k.indexOf('grocery_') === 0 && k.indexOf(keep) !== 0) localStorage.removeItem(k);
+  });
+}
+
+// ── PLAN PERSISTENCE ─────────────────────────────────────────
+function savePlan() {
+  if (!state.plan) return;
+  try {
+    localStorage.setItem('mp_plan', JSON.stringify({ plan: state.plan, genId: state.currentGenId }));
+  } catch(e) { /* storage full — ignore */ }
+}
+function loadPlan() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('mp_plan') || 'null');
+    if (saved && saved.plan && Array.isArray(saved.plan.meals)) {
+      state.plan = saved.plan;
+      state.currentGenId = saved.genId || null;
+      renderResults(false);
+    }
+  } catch(e) { /* corrupt — ignore */ }
 }
 
 function diffClass(d) {
@@ -465,7 +553,8 @@ function loadProfile() {
 function getProfile() { return JSON.parse(localStorage.getItem('mp_family')||'{}'); }
 
 function loadHistory() {
-  state.history = JSON.parse(localStorage.getItem('mp_history')||'[]');
+  const cutoff = Date.now() - 60*24*60*60*1000; // keep 60 days so it doesn't grow forever
+  state.history = JSON.parse(localStorage.getItem('mp_history')||'[]').filter(h => h.date > cutoff);
   state.blacklist = JSON.parse(localStorage.getItem('mp_blacklist')||'[]');
 }
 function saveHistory() {
@@ -490,8 +579,11 @@ function updateFavSummary() {
     wrap.classList.add('hidden');
   }
 }
-function toggleFavourite(id, title) {
-  if (state.favourites.has(title)) { 
+function toggleFavourite(idx) {
+  const meal = state.plan && state.plan.meals[idx];
+  if (!meal) return;
+  const title = meal.title;
+  if (state.favourites.has(title)) {
     state.favourites.delete(title); 
     toast('Removed from favourites',''); 
   } else { 
@@ -500,7 +592,7 @@ function toggleFavourite(id, title) {
   }
   saveFavourites();
   updateFavSummary();
-  const btn = document.querySelector('[data-fav="'+id+'"]');
+  const btn = document.querySelector('[data-fav="'+idx+'"]');
   if (btn) btn.classList.toggle('active', state.favourites.has(title));
 }
 function clearFavourites() {
@@ -508,7 +600,7 @@ function clearFavourites() {
     state.favourites.clear();
     saveFavourites();
     updateFavSummary();
-    renderMealCards(false);
+    if (state.plan) renderMealCards(false);
   }
 }
 
@@ -516,10 +608,60 @@ function clearFavourites() {
 window.addEventListener('DOMContentLoaded', () => {
   const k = localStorage.getItem('gemini_key');
   if (k) document.getElementById('apiKey').value = k;
+  loadModelChoice();
   loadProfile();
   loadHistory();
   loadFavourites();
+  loadPlan();
 });
+
+// ── MODEL CHOICE ─────────────────────────────────────────────
+// Google retires model IDs regularly (gemini-2.5-flash was shut down Oct 2026).
+// "Auto" tries these in order and skips any that are retired or unavailable.
+var AUTO_MODELS = ['gemini-flash-latest', 'gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-flash-lite-latest'];
+
+function saveModelChoice() {
+  const sel = document.getElementById('modelSelect').value;
+  const custom = document.getElementById('customModel');
+  custom.classList.toggle('hidden', sel !== 'custom');
+  localStorage.setItem('mp_model', sel);
+  localStorage.setItem('mp_model_custom', custom.value.trim());
+  updateModelStatus();
+}
+function loadModelChoice() {
+  const sel = localStorage.getItem('mp_model') || 'auto';
+  document.getElementById('modelSelect').value = sel;
+  document.getElementById('customModel').value = localStorage.getItem('mp_model_custom') || '';
+  document.getElementById('customModel').classList.toggle('hidden', sel !== 'custom');
+  updateModelStatus();
+}
+function updateModelStatus() {
+  const ok = localStorage.getItem('mp_model_ok');
+  const sel = localStorage.getItem('mp_model') || 'auto';
+  const el = document.getElementById('modelStatus');
+  if (!el) return;
+  el.textContent = (sel === 'auto' && ok) ? 'Last worked with: ' + ok : '';
+}
+function getModelCandidates() {
+  const sel = localStorage.getItem('mp_model') || 'auto';
+  if (sel === 'custom') {
+    const c = (localStorage.getItem('mp_model_custom') || '').trim();
+    return c ? [c] : AUTO_MODELS.slice();
+  }
+  if (sel !== 'auto') return [sel];
+  const ok = localStorage.getItem('mp_model_ok');
+  const list = AUTO_MODELS.slice();
+  if (ok) { const i = list.indexOf(ok); if (i > 0) { list.splice(i,1); list.unshift(ok); } else if (i < 0) list.unshift(ok); }
+  return list;
+}
+// True when an error means "this model can't be used" (so trying another model may help)
+function isModelUnavailable(status, msg) {
+  msg = (msg || '').toLowerCase();
+  if (status === 404) return true;
+  if (status === 429 && msg.indexOf('limit: 0') >= 0) return true;
+  if ((status === 400 || status === 403) && /model/.test(msg) && /not found|not supported|no longer|unavailable|permission|access/.test(msg)) return true;
+  return false;
+}
 
 function saveKey() {
   const k = document.getElementById('apiKey').value.trim();
@@ -532,19 +674,41 @@ function getKey() {
 }
 
 // ── PHOTO ────────────────────────────────────────────────────
+// Phone photos are often 5–12 MB. Shrink to max 1280px JPEG before sending.
+var PHOTO_MAX_DIM = 1280;
 function handlePhoto(input) {
   const file = input.files[0];
   if (!file) return;
-  state.photoMime = file.type || 'image/jpeg';
   const reader = new FileReader();
   reader.onload = e => {
-    state.photoB64 = e.target.result.split(',')[1];
-    const img = document.getElementById('photoPreview');
-    img.src = e.target.result;
-    img.classList.remove('hidden');
-    document.getElementById('uploadPlaceholder').classList.add('hidden');
+    const original = e.target.result;
+    const img = new Image();
+    img.onload = () => {
+      let w = img.naturalWidth, h = img.naturalHeight;
+      const scale = Math.min(1, PHOTO_MAX_DIM / Math.max(w, h));
+      w = Math.round(w * scale); h = Math.round(h * scale);
+      let dataUrl = original, mime = file.type || 'image/jpeg';
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const shrunk = canvas.toDataURL('image/jpeg', 0.82);
+        if (shrunk.length < original.length) { dataUrl = shrunk; mime = 'image/jpeg'; }
+      } catch(err) { /* fall back to original */ }
+      setPhoto(dataUrl, mime);
+    };
+    img.onerror = () => setPhoto(original, file.type || 'image/jpeg'); // e.g. HEIC the browser can't decode
+    img.src = original;
   };
   reader.readAsDataURL(file);
+}
+function setPhoto(dataUrl, mime) {
+  state.photoMime = mime;
+  state.photoB64 = dataUrl.split(',')[1];
+  const prev = document.getElementById('photoPreview');
+  prev.src = dataUrl;
+  prev.classList.remove('hidden');
+  document.getElementById('uploadPlaceholder').classList.add('hidden');
 }
 
 function toggleTag(el) { el.classList.toggle('active'); }
@@ -587,36 +751,76 @@ function confirmGenerate() {
   else generatePlan();
 }
 function closeModal() { document.getElementById('confirmModal').classList.remove('show'); }
-document.addEventListener('click', e => { if (e.target.id==='confirmModal') closeModal(); });
+document.addEventListener('click', e => {
+  if (e.target.id==='confirmModal') closeModal();
+  if (e.target.id==='addMealModal') closeAddModal();
+});
 
 // ── GEMINI ───────────────────────────────────────────────────
-async function callGemini(systemPrompt, messages, schema) {
-  const key = getKey();
-  if (!key) throw new Error('No API key. Enter your Gemini key above.');
+async function callGeminiModel(model, key, body) {
   const res = await fetch(
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + key,
+    'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent',
     {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: systemPrompt }] },
-        contents: messages,
-        generationConfig: { response_mime_type: 'application/json', response_schema: schema }
-      })
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+      body: JSON.stringify(body)
     }
   );
   if (!res.ok) {
     const err = await res.json().catch(()=>({}));
-    throw new Error(err.error?.message || 'API error ' + res.status);
+    const e = new Error(err.error?.message || 'API error ' + res.status);
+    e.status = res.status;
+    throw e;
   }
   const data = await res.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  return JSON.parse(text);
+  const cand = data.candidates?.[0];
+  if (!cand) {
+    const reason = data.promptFeedback?.blockReason;
+    throw new Error(reason ? 'Gemini blocked the request (' + reason + '). Try a different photo or wording.' : 'Gemini returned no answer. Please try again.');
+  }
+  // Join all text parts, skipping any "thought" parts newer models may return
+  const text = (cand.content?.parts || []).filter(p => p.text && !p.thought).map(p => p.text).join('');
+  if (!text) throw new Error('Gemini returned an empty answer' + (cand.finishReason ? ' (' + cand.finishReason + ')' : '') + '. Please try again.');
+  try { return JSON.parse(text); }
+  catch(e) {
+    throw new Error(cand.finishReason === 'MAX_TOKENS'
+      ? 'The answer was cut off (too long). Try fewer meals.'
+      : 'Could not read Gemini\'s answer. Please try again.');
+  }
+}
+
+async function callGemini(systemPrompt, messages, schema) {
+  const key = getKey();
+  if (!key) throw new Error('No API key. Enter your Gemini key above.');
+  const body = {
+    systemInstruction: { parts: [{ text: systemPrompt }] },
+    contents: messages,
+    generationConfig: { responseMimeType: 'application/json', responseSchema: schema }
+  };
+  const models = getModelCandidates();
+  const isAuto = (localStorage.getItem('mp_model') || 'auto') === 'auto';
+  let lastErr = null;
+  for (let i = 0; i < models.length; i++) {
+    try {
+      const out = await callGeminiModel(models[i], key, body);
+      if (isAuto && localStorage.getItem('mp_model_ok') !== models[i]) {
+        localStorage.setItem('mp_model_ok', models[i]);
+        updateModelStatus();
+      }
+      return out;
+    } catch(e) {
+      lastErr = e;
+      if (!isModelUnavailable(e.status, e.message)) throw e; // real error (bad key, network…) — stop here
+    }
+  }
+  if (isAuto && localStorage.getItem('mp_model_ok')) { localStorage.removeItem('mp_model_ok'); updateModelStatus(); }
+  throw new Error((isAuto ? 'None of the Gemini models responded. ' : 'Model "' + models[0] + '" is unavailable — try Model: Auto. ')
+    + (lastErr ? '(' + lastErr.message + ')' : ''));
 }
 
 function buildParts(text) {
   const parts = [{ text }];
-  if (state.photoB64) parts.unshift({ inline_data: { mime_type: state.photoMime, data: state.photoB64 } });
+  if (state.photoB64) parts.unshift({ inlineData: { mimeType: state.photoMime, data: state.photoB64 } });
   return parts;
 }
 
@@ -663,14 +867,19 @@ async function generatePlan() {
 
   try {
     const plan = await callGemini(buildFullPrompt(), [{ role:'user', parts: buildParts(userText) }], FULL_SCHEMA);
+    if (!plan || !Array.isArray(plan.meals) || !plan.meals.length) throw new Error('Gemini returned no meals. Please try again.');
     clearInterval(stepTimer);
     setLoading(true, 'Done! ✨');
     await new Promise(r => setTimeout(r, 600));
     state.plan = plan;
     state.currentGenId = Date.now();
+    state.undoMeal = null;
     plan.meals.forEach(m => state.history.push({ title: m.title, date: state.currentGenId, genId: state.currentGenId }));
     saveHistory();
+    clearOldTicks();
+    savePlan();
     renderResults(true);
+    document.getElementById('results').scrollIntoView({ behavior:'smooth', block:'start' });
   } catch(e) { clearInterval(stepTimer); showError(e.message); }
   finally { setLoading(false); }
 }
@@ -707,9 +916,11 @@ async function swapMeal(idx) {
 
   try {
     const newMeal = await callGemini(SWAP_PROMPT, [{ role:'user', parts: buildParts(userText) }], MEAL_SCHEMA);
+    if (meal.day) newMeal.day = meal.day; // keep the day it was assigned to
     state.plan.meals[idx] = newMeal;
     state.history.push({ title: newMeal.title, date: Date.now(), genId: state.currentGenId });
     saveHistory();
+    savePlan();
     renderResults(false);
     toastWithUndo('Meal swapped');
     regenShoppingList();
@@ -742,31 +953,52 @@ function undoSwap() {
     state.plan.meals[idx] = meal;
   }
   state.undoMeal = null;
+  savePlan();
   renderMealCards(false);
   renderShoppingList();
   toast(wasDelete ? 'Meal restored' : 'Swap undone', '');
+  regenShoppingList();
 }
 
+// Rebuilds the shopping list from the current meals. A sequence number makes sure
+// an older, slower request can't overwrite a newer one.
+var shopListSeq = 0;
 async function regenShoppingList() {
   if (!state.plan) return;
+  const seq = ++shopListSeq;
+  const customItems = state.plan.shopping_list ? (state.plan.shopping_list['Extra Items'] || []) : [];
+  const updating = document.getElementById('listUpdating');
+
+  if (!state.plan.meals.length) {
+    state.plan.shopping_list = customItems.length ? { 'Extra Items': customItems } : {};
+    savePlan(); renderShoppingList(); return;
+  }
+
   const titles = state.plan.meals.map(m => m.title).join(', ');
   const profile = getProfile();
-  let userText = 'Generate a shopping list for these meals: ' + titles + '.';
+  const pax = (parseInt(profile.adults) || 2) + (parseInt(profile.kids) || 0);
+  let userText = 'Generate a shopping list for these meals, for ' + pax + ' people: ' + titles + '.';
+  if (hasFridgeContext()) userText += ' Leave out anything already in the fridge: ' + document.getElementById('fridgeText').value.trim() + '.';
   if (profile.allergies) userText += ' Exclude: ' + profile.allergies + '.';
-  
-  // Preserve custom items before overwriting
-  const customItems = state.plan.shopping_list ? (state.plan.shopping_list['Extra Items'] || []) : [];
-  
+
+  if (updating) updating.classList.remove('hidden');
   try {
     const sl = await callGemini(SHOPPING_PROMPT, [{ role:'user', parts:[{ text: userText }] }], SHOPPING_SCHEMA);
+    if (seq !== shopListSeq) return; // a newer update is on its way
     state.plan.shopping_list = sl;
     if (customItems.length) state.plan.shopping_list['Extra Items'] = customItems;
+    savePlan();
     renderShoppingList();
-  } catch(e) { /* silent */ }
+  } catch(e) {
+    if (seq === shopListSeq) toast('Shopping list didn\'t update: ' + e.message, 'error');
+  } finally {
+    if (seq === shopListSeq && updating) updating.classList.add('hidden');
+  }
 }
 
 function setDay(idx, day) {
   state.plan.meals[idx].day = state.plan.meals[idx].day === day ? null : day;
+  savePlan();
   renderMealCards(false);
 }
 
@@ -776,12 +1008,62 @@ function addCustomItem() {
   const name = nameEl.value.trim();
   const cost = parseFloat(costEl.value) || 0;
   if (!name) return;
+  if (!state.plan.shopping_list) state.plan.shopping_list = {};
   
   if (!state.plan.shopping_list['Extra Items']) {
     state.plan.shopping_list['Extra Items'] = [];
   }
   state.plan.shopping_list['Extra Items'].push({ name, cost });
+  savePlan();
   renderShoppingList();
+}
+
+function removeExtraItem(i) {
+  const extras = state.plan.shopping_list['Extra Items'] || [];
+  extras.splice(i, 1);
+  savePlan();
+  renderShoppingList();
+}
+
+function clearTicks() {
+  document.querySelectorAll('#shoppingList input[type=checkbox]').forEach(cb => {
+    cb.checked = false;
+    localStorage.removeItem(cb.id);
+  });
+  updateShoppingCost();
+}
+
+function copyShoppingList() {
+  if (!state.plan) return;
+  const sl = state.plan.shopping_list || {};
+  const lines = [];
+  [...AISLE_ORDER, 'Extra Items'].forEach(cat => {
+    const items = (sl[cat] || []).filter(item => {
+      const name = typeof item === 'string' ? item : item.name;
+      return localStorage.getItem(checkboxKey(cat, name)) !== 'true'; // only what's still to buy
+    });
+    if (!items.length) return;
+    lines.push(cat.toUpperCase());
+    items.forEach(item => {
+      const name = typeof item === 'string' ? item : item.name;
+      const qty = typeof item === 'object' && item.qty ? ' (' + item.qty + ')' : '';
+      lines.push('- ' + name + qty);
+    });
+    lines.push('');
+  });
+  const text = lines.join('\n').trim();
+  if (!text) { toast('Nothing left to buy!', 'success'); return; }
+  const done = () => toast('Shopping list copied', 'success');
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+  } else fallbackCopy(text, done);
+}
+function fallbackCopy(text, done) {
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); done(); } catch(e) { toast('Copy failed', 'error'); }
+  document.body.removeChild(ta);
 }
 
 function updateShoppingCost() {
@@ -793,7 +1075,7 @@ function updateShoppingCost() {
     if (sl[cat]) {
       sl[cat].forEach(item => {
         const name = typeof item === 'string' ? item : item.name;
-        const cost = typeof item === 'object' ? (item.cost || 0) : 0;
+        const cost = typeof item === 'object' ? (Number(item.cost) || 0) : 0;
         const key = checkboxKey(cat, name);
         const isChecked = localStorage.getItem(key) === 'true';
         if (!isChecked) total += cost;
@@ -873,7 +1155,7 @@ function renderMealCards(animate) {
       + '<div class="meal-card-top">'
       + '<div class="meal-title"><a href="' + url + '" target="_blank">' + escH(m.title) + '</a></div>'
       + '<div class="card-actions">'
-      + '<button class="fav-btn' + (isFav?' active':'') + '" data-fav="' + escH(m.id) + '" title="Save to Favourites (prioritises this in future plans)" onclick="toggleFavourite(\'' + escH(m.id) + '\', \'' + escH(m.title).replace(/'/g,"\\'") + '\')">\u2665</button>'
+      + '<button class="fav-btn' + (isFav?' active':'') + '" data-fav="' + i + '" title="Save to Favourites (prioritises this in future plans)" onclick="toggleFavourite(' + i + ')">\u2665</button>'
       + '<button class="swap-btn hide-on-mobile" onclick="blacklistMeal(' + i + ')" title="Never suggest this">\uD83D\uDEAB Ban</button>'
       + '<button class="swap-btn hide-on-mobile" data-swap="' + i + '" onclick="swapMeal(' + i + ')">\uD83D\uDD04 Swap</button>'
       + '<button class="del-btn" onclick="deleteMeal(' + i + ')" title="Remove this meal">&#128465;</button>'
@@ -896,11 +1178,13 @@ function renderMealCards(animate) {
 
 // ── DELETE MEAL ─────────────────────────────────────────────
 function deleteMeal(idx) {
+  if (state.swapInProgress) { toast('Please wait for the current swap to finish','error'); return; }
   const removed = state.plan.meals.splice(idx, 1)[0];
   state.undoMeal = { idx, meal: removed, wasDelete: true };
-  toast('Meal removed', '', true);
+  savePlan();
+  toastWithUndo('Meal removed');
   renderMealCards(false);
-  renderShoppingList();
+  regenShoppingList();
 }
 
 // ── ADD MEAL ─────────────────────────────────────────────────
@@ -931,9 +1215,12 @@ async function submitAddMeal() {
   try {
     const newMeal = await callGemini(SWAP_PROMPT, [{ role: 'user', parts: buildParts(userText) }], MEAL_SCHEMA);
     state.plan.meals.push(newMeal);
-    renderMealCards(true);
-    renderShoppingList();
+    state.history.push({ title: newMeal.title, date: Date.now(), genId: state.currentGenId });
+    saveHistory();
+    savePlan();
+    renderMealCards(false);
     toast('Meal added!', 'success');
+    regenShoppingList();
   } catch(e) { showError(e.message); }
   finally { setLoading(false); }
 }
@@ -998,19 +1285,23 @@ function renderShoppingList() {
   let html = aisles.map(cat => {
     const items = sl[cat];
     if (!items || !items.length) return '';
-    const rows = items.map(item => {
+    const rows = items.map((item, itemIdx) => {
       const name = typeof item === 'string' ? item : item.name;
-      const cost = typeof item === 'object' ? (item.cost || 0) : 0;
+      const cost = typeof item === 'object' ? (Number(item.cost) || 0) : 0;
       const key = checkboxKey(cat, name);
       const costBadge = cost > 0 ? '<span class="item-cost">$' + cost.toFixed(2) + '</span>' : '';
-      
+
       const qty = typeof item === 'object' && item.qty ? item.qty : '';
       const qtyBadge = qty ? '<span class="badge badge-qty">' + escH(qty) + '</span>' : '';
+      const removeBtn = cat === 'Extra Items'
+        ? '<button class="del-btn" style="padding:2px 7px;font-size:11px;" onclick="removeExtraItem(' + itemIdx + ')" title="Remove">&#10005;</button>'
+        : '';
       return '<div class="shop-item">'
-        + '<input type="checkbox" id="' + escH(key) + '" onchange="localStorage.setItem(\'' + escH(key) + '\',this.checked); updateShoppingCost();">'
+        + '<input type="checkbox" id="' + escH(key) + '" onchange="if(this.checked){localStorage.setItem(this.id,\'true\')}else{localStorage.removeItem(this.id)} updateShoppingCost();">'
         + '<label for="' + escH(key) + '">' + escH(name) + '</label>'
         + qtyBadge
         + costBadge
+        + removeBtn
         + '</div>';
     }).join('');
     return '<div class="shop-section"><div class="shop-category">' + escH(cat) + '</div>' + rows + '</div>';
@@ -1019,7 +1310,7 @@ function renderShoppingList() {
   html += '<div class="shop-section" style="margin-top:24px; padding-top:16px; border-top:1px dashed var(--border);">'
         + '<div class="shop-category">Additional Items</div>'
         + '<div style="display:flex; gap:8px;">'
-        + '<input type="text" id="newItemName" class="profile-input" placeholder="e.g. Toilet Paper">'
+        + '<input type="text" id="newItemName" class="profile-input" placeholder="e.g. Toilet Paper" onkeydown="if(event.key===\'Enter\')addCustomItem()">'
         + '<input type="number" id="newItemCost" class="profile-input" placeholder="$0.00" style="width:80px;" step="0.5">'
         + '<button class="api-save" onclick="addCustomItem()">Add</button>'
         + '</div></div>';
@@ -1156,13 +1447,16 @@ function downloadHTML() {
     if (!items || !items.length) return '';
     const rows = items.map(item => {
       const name = typeof item === 'string' ? item : item.name;
-      const cost = typeof item === 'object' ? (item.cost || 0) : 0;
+      const cost = typeof item === 'object' ? (Number(item.cost) || 0) : 0;
       const key = checkboxKey(cat, name);
       const costBadge = cost > 0 ? '<span class="item-cost" data-val="' + cost + '" style="font-size:13px;color:#64748b;font-variant-numeric:tabular-nums;">$' + cost.toFixed(2) + '</span>' : '';
-      
+      const qty = typeof item === 'object' && item.qty ? item.qty : '';
+      const qtyBadge = qty ? '<span style="font-size:11px;color:#94a3b8;border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:2px 8px;">' + escH(qty) + '</span>' : '';
+
       return '<div class="shop-item" style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04);">'
         + '<input type="checkbox" id="' + escH(key) + '" style="accent-color:#f59e0b;width:16px;height:16px;flex-shrink:0;">'
         + '<label for="' + escH(key) + '" style="font-size:14px;cursor:pointer;flex:1;user-select:none;">' + escH(name) + '</label>'
+        + qtyBadge
         + costBadge
         + '</div>';
     }).join('');
@@ -1255,8 +1549,9 @@ function setLoading(on, msg) {
   if (!on) document.querySelectorAll('.dot').forEach(function(d) { d.classList.remove('done'); });
   const btn = document.getElementById('generateBtn');
   btn.disabled = on;
-  btn.textContent = on ? 'Generating…' : '✶ Generate This Week\'s Plan';
-  if (on) document.getElementById('results').classList.add('hidden');
+  btn.textContent = on ? 'Working…' : '✦ Generate This Week\'s Plan';
+  // Note: results stay visible while loading, so a failed request or "Add a meal" never hides the plan
+  if (on) document.getElementById('loader').scrollIntoView({ behavior:'smooth', block:'center' });
 }
 function setDownloadDisabled(v) {
   const b = document.getElementById('downloadBtn');
@@ -1303,8 +1598,4 @@ zone.addEventListener('drop', e => {
 });
 </script>
 </body>
-</html  /* Mic button */
-  .mic-btn { position:absolute; bottom:8px; right:8px; background:transparent; border:none; padding:4px 6px; cursor:pointer; color:var(--text-muted); display:flex; align-items:center; transition:color 0.15s; border-radius:6px; }
-  .mic-btn:hover { color:var(--amber); }
-  .mic-btn.listening { color:var(--red); animation:pulse-mic 1s ease-in-out infinite; }
-  @keyframes pulse-mic { 0%,100%{opacity:1} 50%{opacity:0.5} }>
+</html>
