@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Tilly's Meal Planner</title>
-<meta name="theme-color" content="#fff6f8">
+<meta name="theme-color" content="#FFF6F8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Meal Planner">
@@ -209,6 +209,37 @@
   .theme-switch { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
   .theme-switch .tag { justify-content: center; }
 
+  /* ── TONIGHT, BUDGET, SPEND ─────────────────────────────── */
+  .tonight { background: var(--pink-soft); border-color: var(--border-strong); }
+  .tonight .eyebrow { font-size: 12px; font-weight: 700; color: var(--pink); letter-spacing: 0.3px; }
+  .tonight .t-title { font-family: 'Fraunces', Georgia, serif; font-weight: 600; font-size: 1.35rem; line-height: 1.25; margin: 4px 0 8px; }
+  .tonight .t-title a { color: var(--text); text-decoration: none; }
+  .tonight .t-meta { font-size: 13px; color: var(--muted); }
+  .tonight .t-prep { margin-top: 12px; background: var(--surface); border-radius: 12px; padding: 10px 12px; font-size: 13px; color: var(--text); }
+  .budget-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .budget-top strong { font-family: 'Fraunces', Georgia, serif; font-size: 1.3rem; color: var(--text); }
+  .bar-track { height: 10px; border-radius: 999px; background: var(--surface2); border: 1px solid var(--border); overflow: hidden; margin: 10px 0 8px; }
+  .bar-fill { height: 100%; border-radius: 999px; background: var(--mint); transition: width 0.4s; }
+  .bar-fill.warn { background: #E8B04A; }
+  .bar-fill.over { background: var(--danger); }
+  .delta { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 2px 8px; }
+  .delta.up { background: var(--coral-soft); color: var(--coral); }
+  .delta.down { background: var(--mint-soft); color: var(--mint); }
+  .new-week-btn { width: 100%; margin-bottom: 14px; border-style: dashed; min-height: 48px; }
+  .collapse-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; cursor: pointer; }
+  .check-row { display: flex; align-items: flex-start; gap: 10px; margin: 12px 0 0; font-size: 13px; color: var(--text); cursor: pointer; line-height: 1.4; }
+  .check-row input { accent-color: var(--pink); width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; }
+  .title-row { display: flex; justify-content: space-between; align-items: center; margin: 22px 0 12px; gap: 10px; }
+  .badge-prep { background: var(--butter-soft); color: var(--butter); }
+  .badge-leftover { background: var(--lilac-soft); color: var(--lilac); }
+  .store-link { color: var(--pink); text-decoration: none; font-size: 15px; width: 34px; height: 34px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .store-link:hover { background: var(--pink-soft); }
+  .spend-row { display: grid; grid-template-columns: 74px 1fr auto auto; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .spend-row:last-child { border-bottom: none; }
+  .spend-row .mini { height: 6px; border-radius: 999px; background: var(--surface2); overflow: hidden; }
+  .spend-row .mini span { display: block; height: 100%; background: var(--pink-fill); border-radius: 999px; }
+  .spend-summary { margin-top: 14px; padding: 10px 12px; border-radius: 12px; background: var(--surface2); font-size: 13px; line-height: 1.45; }
+
   /* ── AI SETUP ───────────────────────────────────────────── */
   .provider-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .provider { border: 1px solid var(--border); background: var(--surface2); border-radius: 16px; padding: 12px; cursor: pointer; text-align: left; font-family: inherit; color: var(--text); transition: all 0.15s; min-height: 64px; }
@@ -276,81 +307,99 @@
       <button class="btn btn-pink" onclick="showTab('settings')">Set up</button>
     </div>
 
-    <div class="card">
-      <div class="section-label">Fridge or pantry photo</div>
-      <div class="upload-zone" id="uploadZone">
-        <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="handlePhoto(this)">
-        <div id="uploadPlaceholder"><div class="icon">&#128248;</div><p>Take a photo or upload one</p></div>
-        <img id="photoPreview" class="preview hidden" alt="Fridge photo">
-      </div>
-      <button class="btn hidden" id="removePhotoBtn" style="margin-top:10px;width:100%;" onclick="removePhoto()">Remove photo</button>
-    </div>
+    <div class="card tonight hidden" id="tonightCard"></div>
+    <div class="card hidden" id="budgetCard"></div>
 
-    <div class="card stack">
-      <div>
-        <div class="section-label">This week</div>
-        <label>Dinners to plan: <strong id="mealCountLabel" style="color:var(--pink)">5</strong></label>
-        <input type="range" id="mealCount" min="1" max="7" value="5" step="1" oninput="document.getElementById('mealCountLabel').textContent=this.value">
-        <div class="range-row"><span>1</span><span>7</span></div>
-      </div>
+    <button class="btn new-week-btn hidden" id="newWeekBtn" onclick="openPlanForm()">&#43; Plan a new week</button>
 
-      <div>
-        <label>Focus goals</label>
-        <div class="tag-row" id="focusTags">
-          <div class="tag" data-val="High Protein" onclick="toggleTag(this)">&#128170; High protein</div>
-          <div class="tag" data-val="High Iron" onclick="toggleTag(this)">&#129388; High iron</div>
-          <div class="tag" data-val="Hidden Veggies" onclick="toggleTag(this)">&#129382; Hidden veggies</div>
-          <div class="tag" data-val="Low Carb" onclick="toggleTag(this)">&#127807; Low carb</div>
-          <div class="tag" data-val="Budget Friendly" onclick="toggleTag(this)">&#128176; Budget friendly</div>
+    <div id="planForm">
+      <div class="card">
+        <div class="section-label">What's in the fridge?</div>
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="handlePhoto(this)">
+          <div id="uploadPlaceholder"><div class="icon">&#128248;</div><p>Snap the fridge (optional)</p></div>
+          <img id="photoPreview" class="preview hidden" alt="Fridge photo">
         </div>
-      </div>
-
-      <div>
-        <label>What's hiding in the back of the fridge?</label>
-        <div style="position:relative;">
-          <textarea id="fridgeText" placeholder="Half a block of feta, some wilting spinach, leftover rice&hellip;" rows="3" style="padding-right:52px;" oninput="saveFridge()"></textarea>
+        <button class="btn hidden" id="removePhotoBtn" style="margin-top:10px;width:100%;" onclick="removePhoto()">Remove photo</button>
+        <div style="position:relative;margin-top:12px;">
+          <textarea id="fridgeText" placeholder="Or type or say it: half a block of feta, wilting spinach, leftover rice&hellip;" rows="2" style="padding-right:52px;" oninput="saveFridge()"></textarea>
           <button class="mic-btn" id="micBtn" onclick="toggleMic()" aria-label="Speak your fridge contents">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
           </button>
         </div>
         <p id="micStatus" class="hint hidden" style="color:var(--danger);">&#9679; Listening&hellip;</p>
+        <label class="check-row hidden" id="carryRow"><input type="checkbox" id="carryCheck" onchange="savePrefs()"> <span id="carryText"></span></label>
         <p class="hint" id="staplesHint"></p>
       </div>
 
-      <div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-          <label style="margin:0;">Vibe and cuisine <span style="font-size:11px;">(optional)</span></label>
-          <button class="btn" onclick="toggleVibePanel()" id="vibePanelToggle" style="min-height:34px;padding:6px 12px;">Customise</button>
-        </div>
-        <div id="vibePanel" class="hidden">
-          <label>Vibe and effort</label>
-          <div class="tag-row" id="vibeTags" style="margin-bottom:12px;">
-            <div class="tag active" data-val="Standard family dinners, approachable, classic RecipeTin Eats" onclick="toggleVibeTag(this)">&#127869; Standard</div>
-            <div class="tag" data-val="Quick, easy, low effort, minimal prep, under 30 minutes" onclick="toggleVibeTag(this)">&#9889; Quick and easy</div>
-            <div class="tag" data-val="Adventurous, bold flavors, something new and exciting" onclick="toggleVibeTag(this)">&#127775; Something new</div>
-            <div class="tag" data-val="Impressive, complex, restaurant quality weekend cooking" onclick="toggleVibeTag(this)">&#11088; Challenge me</div>
+      <div class="card">
+        <div class="collapse-head" onclick="toggleAdjust()">
+          <div>
+            <div class="section-label" style="margin:0;">This week</div>
+            <div class="hint" style="margin-top:2px;" id="adjustSummary">5 dinners &middot; Standard</div>
           </div>
-          <label>Cuisines <span style="font-size:11px;">(pick any)</span></label>
-          <div class="tag-row" id="cuisineTags">
-            <div class="tag" data-val="Asian" onclick="toggleTag(this);updateVibeSummary()">&#x1F35C; Asian</div>
-            <div class="tag" data-val="Italian" onclick="toggleTag(this);updateVibeSummary()">&#x1F35D; Italian</div>
-            <div class="tag" data-val="Mexican" onclick="toggleTag(this);updateVibeSummary()">&#x1F32E; Mexican</div>
-            <div class="tag" data-val="Mediterranean" onclick="toggleTag(this);updateVibeSummary()">&#x1F96B; Mediterranean</div>
-            <div class="tag" data-val="Middle Eastern" onclick="toggleTag(this);updateVibeSummary()">&#x1F9C6; Middle Eastern</div>
-            <div class="tag" data-val="Thai" onclick="toggleTag(this);updateVibeSummary()">&#x1F372; Thai</div>
-            <div class="tag" data-val="Indian" onclick="toggleTag(this);updateVibeSummary()">&#x1F35B; Indian</div>
-            <div class="tag" data-val="Classic Australian" onclick="toggleTag(this);updateVibeSummary()">&#x1F969; Classic Aussie</div>
-          </div>
+          <button class="btn" id="adjustToggle" style="min-height:34px;padding:6px 12px;">Adjust</button>
         </div>
-        <p id="vibeSummary" class="hint">&#127869; Standard family dinners</p>
+        <div id="adjustPanel" class="hidden stack" style="margin-top:14px;">
+          <div>
+            <label>Dinners to plan: <strong id="mealCountLabel" style="color:var(--pink)">5</strong></label>
+            <input type="range" id="mealCount" min="1" max="7" value="5" step="1" oninput="document.getElementById('mealCountLabel').textContent=this.value; savePrefs()">
+            <div class="range-row"><span>1</span><span>7</span></div>
+          </div>
+          <div>
+            <label>Cook once, eat twice</label>
+            <div class="tag-row" id="leftoverTags">
+              <div class="tag active" data-val="0" onclick="pickOne(this)">None</div>
+              <div class="tag" data-val="1" onclick="pickOne(this)">&#127857; 1 meal</div>
+              <div class="tag" data-val="2" onclick="pickOne(this)">&#127857; 2 meals</div>
+            </div>
+            <p class="hint">Makes extra for lunches or a night off cooking.</p>
+          </div>
+          <div>
+            <label>Focus goals</label>
+            <div class="tag-row" id="focusTags">
+              <div class="tag" data-val="High Protein" onclick="toggleTag(this)">&#128170; High protein</div>
+              <div class="tag" data-val="High Iron" onclick="toggleTag(this)">&#129388; High iron</div>
+              <div class="tag" data-val="Hidden Veggies" onclick="toggleTag(this)">&#129382; Hidden veggies</div>
+              <div class="tag" data-val="Low Carb" onclick="toggleTag(this)">&#127807; Low carb</div>
+              <div class="tag" data-val="Budget Friendly" onclick="toggleTag(this)">&#128176; Budget friendly</div>
+            </div>
+          </div>
+          <div>
+            <label>Vibe and effort</label>
+            <div class="tag-row" id="vibeTags">
+              <div class="tag active" data-val="Standard family dinners, approachable, classic RecipeTin Eats" onclick="pickOne(this)">&#127869; Standard</div>
+              <div class="tag" data-val="Quick, easy, low effort, minimal prep, under 30 minutes" onclick="pickOne(this)">&#9889; Quick and easy</div>
+              <div class="tag" data-val="Adventurous, bold flavors, something new and exciting" onclick="pickOne(this)">&#127775; Something new</div>
+              <div class="tag" data-val="Impressive, complex, restaurant quality weekend cooking" onclick="pickOne(this)">&#11088; Challenge me</div>
+            </div>
+          </div>
+          <div>
+            <label>Cuisines <span style="font-size:11px;">(pick any)</span></label>
+            <div class="tag-row" id="cuisineTags">
+              <div class="tag" data-val="Asian" onclick="toggleTag(this)">&#x1F35C; Asian</div>
+              <div class="tag" data-val="Italian" onclick="toggleTag(this)">&#x1F35D; Italian</div>
+              <div class="tag" data-val="Mexican" onclick="toggleTag(this)">&#x1F32E; Mexican</div>
+              <div class="tag" data-val="Mediterranean" onclick="toggleTag(this)">&#x1F96B; Mediterranean</div>
+              <div class="tag" data-val="Middle Eastern" onclick="toggleTag(this)">&#x1F9C6; Middle Eastern</div>
+              <div class="tag" data-val="Thai" onclick="toggleTag(this)">&#x1F372; Thai</div>
+              <div class="tag" data-val="Indian" onclick="toggleTag(this)">&#x1F35B; Indian</div>
+              <div class="tag" data-val="Classic Australian" onclick="toggleTag(this)">&#x1F969; Classic Aussie</div>
+            </div>
+          </div>
+          <p class="hint" style="margin:0;">Your choices are remembered for next week.</p>
+        </div>
       </div>
-    </div>
 
-    <button class="btn-primary" id="generateBtn" onclick="confirmGenerate()">&#10047; Plan my week</button>
+      <button class="btn-primary" id="generateBtn" onclick="confirmGenerate()">&#10047; Plan my week</button>
+    </div>
     <div class="error-box hidden" id="errorBox"></div>
 
     <div id="results" class="hidden">
-      <h2 class="section-title">This week's menu</h2>
+      <div class="title-row">
+        <h2 class="section-title" style="margin:0;">This week's menu</h2>
+        <button class="btn" style="min-height:36px;padding:6px 12px;" onclick="exportCalendar()">&#128197; Calendar</button>
+      </div>
       <div class="gen-status hidden" id="genStatus"><span class="spinner"></span><span id="genMsg">Planning your week&hellip;</span></div>
       <div class="card fav-summary hidden" id="favSummaryWrapper">
         <div style="font-size:13px;line-height:1.4;">
@@ -365,7 +414,7 @@
 
   <!-- ═════════════ SHOPPING TAB ═════════════ -->
   <section class="tab-panel hidden" id="tab-shop">
-    <h2 class="section-title" style="margin-top:4px;">Woolworths list</h2>
+    <h2 class="section-title" style="margin-top:4px;" id="shopTitle">Woolworths list</h2>
     <div id="shopEmpty" class="card empty">
       <div class="big">&#128722;</div>
       <h3>Your list will appear here</h3>
@@ -378,8 +427,20 @@
         <button class="btn" onclick="copyShoppingList()">&#128203; Copy</button>
         <button class="btn" onclick="clearTicks()">&#8634; Untick</button>
       </div>
+      <p class="hint" id="storeHint" style="margin:-4px 0 12px;"></p>
       <div class="list-updating hidden" id="listUpdating"><span class="spinner"></span> Updating shopping list&hellip;</div>
       <div class="card" id="shoppingList"></div>
+
+      <div class="card" id="spendCard">
+        <div class="section-label">Done shopping?</div>
+        <p class="hint" style="margin:0 0 10px;">Enter your receipt total. After a few shops, the app learns how far off the AI's prices are and corrects its estimates.</p>
+        <div class="row">
+          <input class="input" type="number" id="actualSpend" inputmode="decimal" step="0.01" min="0" placeholder="Receipt total, e.g. 142.50">
+          <button class="btn btn-pink" onclick="saveActualSpend()">Save</button>
+        </div>
+        <div id="spendHistory"></div>
+      </div>
+
       <button class="btn" style="width:100%;" id="downloadBtn" onclick="downloadHTML()">&#8595; Download printable plan</button>
     </div>
   </section>
@@ -436,6 +497,24 @@
       <label>Allergies and dislikes</label>
       <textarea id="allergyText" placeholder="No mushrooms, nut allergy, kids hate capsicum&hellip;" rows="2" oninput="saveProfile()"></textarea>
       <p class="hint">Saved automatically.</p>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Your week</div>
+      <label>Busy nights</label>
+      <div class="tag-row" id="busyDays"></div>
+      <p class="hint">Quick, easy meals go on these nights. Bigger cooks go on quieter nights.</p>
+      <label style="margin-top:14px;">Where you shop</label>
+      <div class="tag-row" id="storeTags">
+        <div class="tag" data-val="woolworths" onclick="setStore('woolworths')">Woolworths</div>
+        <div class="tag" data-val="coles" onclick="setStore('coles')">Coles</div>
+        <div class="tag" data-val="none" onclick="setStore('none')">Other</div>
+      </div>
+      <p class="hint">Each item on your list links to a search at this store.</p>
+      <label style="margin-top:14px;">Meal cards</label>
+      <div class="tag-row">
+        <div class="tag" id="nutritionTag" onclick="toggleNutrition()">&#128293; Show nutrition</div>
+      </div>
     </div>
 
     <div class="card">
@@ -575,9 +654,12 @@ var MEAL_SCHEMA = {
     prep_time:            { type: 'STRING' },
     difficulty:           { type: 'STRING' },
     estimated_cost_aud:   { type: 'STRING' },
-    estimated_cost_per_person_aud: { type: 'STRING' }
+    estimated_cost_per_person_aud: { type: 'STRING' },
+    day:                  { type: 'STRING' },
+    prep_ahead:           { type: 'STRING' },
+    makes_leftovers:      { type: 'BOOLEAN' }
   },
-  required: ['id','title','recipetin_search_url','description','ingredients','macros','prep_time','difficulty','estimated_cost_aud','estimated_cost_per_person_aud']
+  required: ['id','title','recipetin_search_url','description','ingredients','macros','prep_time','difficulty','estimated_cost_aud','estimated_cost_per_person_aud','day','prep_ahead','makes_leftovers']
 };
 
 var SHOP_ITEM_SCHEMA = {
@@ -616,6 +698,8 @@ function buildFullPrompt() {
   const vibe   = getVibeValue();
   const cuisines = getActiveCuisines();
   const staples = getStaples();
+  const busy = getWeek().busy;
+  const leftovers = getLeftoverMeals();
   const budgetLine = profile.budget
     ? 'Weekly grocery budget is approximately $' + profile.budget + ' AUD — keep the total shopping list within this.\n'
     : '';
@@ -646,6 +730,12 @@ function buildFullPrompt() {
     + '  pantry: standard staples not from the fridge (oil, flour, spices, soy sauce, stock, etc.).\n'
     + '  need: everything else to be purchased (meat, fresh produce, specific dairy, pasta, etc.).\n'
     + 'For shopping_list items return "name", "qty" (e.g. "500g", "1 bunch", "x2"), and "cost" (estimated AUD as plain number, 0 for negligible pantry staples).\n'
+    + 'SCHEDULE: Give each meal a different day in the "day" field, using exactly one of: Mon, Tue, Wed, Thu, Fri, Sat, Sun.'
+    + (busy.length ? ' Busy nights are ' + busy.join(', ') + ': only put Easy meals of 30 minutes or less on those nights.' : '')
+    + ' Put the most involved meals on Sat or Sun when possible.\n'
+    + 'WASTE AND COST: Choose meals that share perishable ingredients (for example one bunch of coriander, one tub of cream or one bag of spinach used across two meals) so little is thrown away. List shared items once on the shopping list with the combined quantity.\n'
+    + (leftovers ? 'LEFTOVERS: Exactly ' + leftovers + ' meal(s) should make a double batch for lunches or another night. Set makes_leftovers to true for those, scale their quantities and shopping list to match, and leave the following night free when possible. Set it to false for the rest.\n' : 'Set makes_leftovers to false for every meal.\n')
+    + 'PREP AHEAD: If a meal needs something done the day before (defrost meat, marinate overnight, soak beans), describe it in prep_ahead in under 12 words. Otherwise use an empty string.\n'
     + 'Return a full meal plan with meals array and a categorised shopping_list object.';
 }
 
@@ -661,6 +751,7 @@ var SWAP_PROMPT = 'You are a culinary expert specialising in RecipeTin Eats reci
   + '  pantry: standard pantry items (butter, water, soy sauce, spices, etc.) and any listed pantry staples.\n'
   + '  need: non-standard items (pasta, meat, produce, etc.) that must be purchased.\n'
   + 'Every ingredient must appear in exactly one array.\n'
+  + 'Set day to an empty string and makes_leftovers to false. For prep_ahead, describe any day-before prep (defrosting, marinating) in under 12 words, or use an empty string.\n'
   + 'Return ONLY a single flat JSON meal object.';
 
 var SHOPPING_PROMPT = 'You are a meal planning assistant.\n'
@@ -737,6 +828,7 @@ function saveProfile() {
     budget:  $('weeklyBudget').value,
     allergies: $('allergyText').value
   }));
+  if (state.plan) { renderBudget(); renderSpendHistory(); }
 }
 function loadProfile() {
   const p = getProfile();
@@ -863,6 +955,9 @@ window.addEventListener('DOMContentLoaded', () => {
   $('fridgeText').value = localStorage.getItem('mp_fridge') || '';
   $('staplesText').value = localStorage.getItem('mp_staples') || '';
   renderSetup();
+  loadPrefs();
+  renderWeekSettings();
+  updateStoreLabels();
   loadProfile();
   loadHistory();
   loadFavourites();
@@ -870,6 +965,7 @@ window.addEventListener('DOMContentLoaded', () => {
   updateStaplesHint();
   updateKeyNotice();
   loadPlan();
+  updatePlanFormVisibility();
   checkSetupLink();
 });
 
@@ -1266,31 +1362,303 @@ function removePhoto() {
   $('removePhotoBtn').classList.add('hidden');
 }
 
-// ── TAGS & VIBE ──────────────────────────────────────────────
-function toggleTag(el) { el.classList.toggle('active'); }
+// ── TAGS, PREFERENCES & ONE-TAP PLANNING ─────────────────────
+function toggleTag(el) { el.classList.toggle('active'); savePrefs(); }
+function pickOne(el) {
+  el.parentNode.querySelectorAll('.tag').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  savePrefs();
+}
 function getActiveTags() { return [...document.querySelectorAll('#focusTags .tag.active')].map(t => t.dataset.val); }
 function getActiveCuisines() { return [...document.querySelectorAll('#cuisineTags .tag.active')].map(t => t.dataset.val); }
-function toggleVibeTag(el) {
-  document.querySelectorAll('#vibeTags .tag').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-  updateVibeSummary();
-}
 function getVibeValue() {
   const active = document.querySelector('#vibeTags .tag.active');
   return active ? active.dataset.val : DEFAULT_VIBE;
 }
-function toggleVibePanel() {
-  const hidden = $('vibePanel').classList.toggle('hidden');
-  $('vibePanelToggle').textContent = hidden ? 'Customise' : 'Done';
-  updateVibeSummary();
+function getLeftoverMeals() {
+  const a = document.querySelector('#leftoverTags .tag.active');
+  return a ? (parseInt(a.dataset.val) || 0) : 0;
 }
-function updateVibeSummary() {
-  const vibeEl = document.querySelector('#vibeTags .tag.active');
-  const cuisines = getActiveCuisines();
-  const parts = [];
-  if (vibeEl) parts.push(vibeEl.textContent.trim());
-  if (cuisines.length) parts.push(cuisines.join(', '));
-  $('vibeSummary').textContent = parts.length ? parts.join(' · ') : '🍽 Standard family dinners';
+function toggleAdjust() {
+  const hidden = $('adjustPanel').classList.toggle('hidden');
+  $('adjustToggle').textContent = hidden ? 'Adjust' : 'Done';
+}
+function tagLabel(sel) { const a = document.querySelector(sel + ' .tag.active'); return a ? a.textContent.replace(/^[^A-Za-z]+/, '').trim() : ''; }
+function updateAdjustSummary() {
+  const parts = [$('mealCount').value + ' dinners', tagLabel('#vibeTags') || 'Standard'];
+  const focus = [...document.querySelectorAll('#focusTags .tag.active')].map(t => t.textContent.replace(/^[^A-Za-z]+/, '').trim());
+  if (focus.length) parts.push(focus.join(', '));
+  if (getActiveCuisines().length) parts.push(getActiveCuisines().join(', '));
+  const lo = getLeftoverMeals();
+  if (lo) parts.push(lo + ' with leftovers');
+  $('adjustSummary').textContent = parts.join(' \u00B7 ');
+}
+function updateVibeSummary() { updateAdjustSummary(); }
+
+// Remember this week's choices so next week is one tap
+function savePrefs() {
+  localStorage.setItem('mp_prefs', JSON.stringify({
+    count: parseInt($('mealCount').value) || 5,
+    focus: getActiveTags(),
+    vibe: getVibeValue(),
+    cuisines: getActiveCuisines(),
+    leftovers: getLeftoverMeals(),
+    carry: $('carryCheck').checked
+  }));
+  updateAdjustSummary();
+}
+function setActiveTags(sel, vals) {
+  document.querySelectorAll(sel + ' .tag').forEach(t => t.classList.toggle('active', vals.indexOf(t.dataset.val) >= 0));
+}
+function loadPrefs() {
+  const p = readJSON('mp_prefs', null);
+  if (p) {
+    $('mealCount').value = p.count || 5;
+    $('mealCountLabel').textContent = $('mealCount').value;
+    setActiveTags('#focusTags', p.focus || []);
+    setActiveTags('#cuisineTags', p.cuisines || []);
+    if (p.vibe && document.querySelector('#vibeTags .tag[data-val="' + p.vibe + '"]')) setActiveTags('#vibeTags', [p.vibe]);
+    setActiveTags('#leftoverTags', [String(p.leftovers || 0)]);
+    $('carryCheck').checked = p.carry !== false;
+  } else $('carryCheck').checked = true;
+  updateAdjustSummary();
+}
+
+// ── "YOUR WEEK" SETTINGS ─────────────────────────────────────
+var STORES = {
+  woolworths: { name: 'Woolworths', url: q => 'https://www.woolworths.com.au/shop/search/products?searchTerm=' + encodeURIComponent(q) },
+  coles:      { name: 'Coles',      url: q => 'https://www.coles.com.au/search/products?q=' + encodeURIComponent(q) }
+};
+function getWeek() { return Object.assign({ busy: [], store: 'woolworths', nutrition: false }, readJSON('mp_week', {})); }
+function saveWeek(w) { localStorage.setItem('mp_week', JSON.stringify(w)); }
+function renderWeekSettings() {
+  const w = getWeek();
+  $('busyDays').innerHTML = DAYS.map(d => '<div class="tag' + (w.busy.indexOf(d) >= 0 ? ' active' : '') + '" onclick="toggleBusy(\'' + d + '\')">' + d + '</div>').join('');
+  document.querySelectorAll('#storeTags .tag').forEach(t => t.classList.toggle('active', t.dataset.val === w.store));
+  $('nutritionTag').classList.toggle('active', !!w.nutrition);
+}
+function toggleBusy(d) {
+  const w = getWeek(); const i = w.busy.indexOf(d);
+  if (i >= 0) w.busy.splice(i, 1); else w.busy.push(d);
+  saveWeek(w); renderWeekSettings();
+}
+function setStore(s) {
+  const w = getWeek(); w.store = s; saveWeek(w);
+  renderWeekSettings(); updateStoreLabels();
+  if (state.plan) renderShoppingList();
+}
+function toggleNutrition() {
+  const w = getWeek(); w.nutrition = !w.nutrition; saveWeek(w);
+  renderWeekSettings();
+  if (state.plan) renderMealCards(false);
+}
+function updateStoreLabels() {
+  const st = STORES[getWeek().store];
+  $('shopTitle').textContent = st ? st.name + ' list' : 'Shopping list';
+  $('storeHint').textContent = st ? 'Tap \u2197 next to an item to find it at ' + st.name + '.' : '';
+  $('storeHint').classList.toggle('hidden', !st);
+}
+
+// ── PLAN FORM VISIBILITY ─────────────────────────────────────
+// Once a week is planned, the form tucks away so the Plan tab is just tonight + the menu.
+var planFormOpen = false;
+function updatePlanFormVisibility() {
+  const has = !!state.plan;
+  $('planForm').classList.toggle('hidden', has && !planFormOpen);
+  $('newWeekBtn').classList.toggle('hidden', !has || planFormOpen);
+  updateCarryRow();
+}
+function openPlanForm() {
+  planFormOpen = true;
+  updatePlanFormVisibility();
+  $('planForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Items bought for the current plan that may still be in the fridge next week
+var CARRY_AISLES = ['Fresh Produce', 'Meat & Seafood', 'Dairy & Eggs', 'Deli & Bakery'];
+function getCarryItems() {
+  if (!state.plan) return [];
+  const out = [], sl = state.plan.shopping_list || {};
+  CARRY_AISLES.forEach(cat => (sl[cat] || []).forEach(it => {
+    if (localStorage.getItem(checkboxKey(cat, itemName(it))) === 'true') out.push(itemName(it));
+  }));
+  return out;
+}
+function updateCarryRow() {
+  const items = getCarryItems();
+  $('carryRow').classList.toggle('hidden', !items.length);
+  if (items.length) $('carryText').textContent = 'Use up what might be left from this week\'s shop: '
+    + items.slice(0, 4).join(', ') + (items.length > 4 ? ' and ' + (items.length - 4) + ' more' : '');
+}
+
+// ── DAYS ─────────────────────────────────────────────────────
+// Make sure every meal has its own day; fill gaps on quieter nights first
+function normalizeDays(meals) {
+  const busy = getWeek().busy, used = new Set();
+  meals.forEach(m => { if (DAYS.indexOf(m.day) >= 0 && !used.has(m.day)) used.add(m.day); else m.day = null; });
+  const free = DAYS.filter(d => !used.has(d));
+  const order = free.filter(d => busy.indexOf(d) < 0).concat(free.filter(d => busy.indexOf(d) >= 0));
+  meals.forEach(m => { if (!m.day && order.length) m.day = order.shift(); });
+}
+function dayIndex(d) { const i = DAYS.indexOf(d); return i < 0 ? 9 : i; }
+function sortMealsByDay(meals) { meals.sort((a, b) => dayIndex(a.day) - dayIndex(b.day)); }
+function dayKey(offset) {
+  const d = new Date(); d.setDate(d.getDate() + (offset || 0));
+  return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()];
+}
+
+// ── TONIGHT CARD ─────────────────────────────────────────────
+function renderTonight() {
+  const el = $('tonightCard');
+  if (!state.plan || !state.plan.meals.length) { el.classList.add('hidden'); return; }
+  const t = dayKey(0), meals = state.plan.meals;
+  const find = off => meals.find(m => m.day === dayKey(off));
+  const tonight = find(0), tomorrow = find(1), yesterday = find(-1);
+  let h = '';
+  if (state.currentGenId && Date.now() - state.currentGenId > 7 * 24 * 60 * 60 * 1000) {
+    h = '<div class="eyebrow">NEW WEEK</div><div class="t-title">Time to plan this week</div>'
+      + '<div class="t-meta">Your last plan is over a week old.</div>'
+      + '<button class="btn-primary" style="margin:12px 0 0;" onclick="openPlanForm()">\u273F Plan this week</button>';
+    el.innerHTML = h; el.classList.remove('hidden'); return;
+  }
+  h += '<div class="eyebrow">TONIGHT \u00B7 ' + t.toUpperCase() + '</div>';
+  if (tonight) {
+    h += '<div class="t-title"><a href="' + escH(getRecipeUrl(tonight)) + '" target="_blank" rel="noopener">' + escH(tonight.title) + ' \u2197</a></div>'
+      + '<div class="t-meta">' + [tonight.prep_time && '\u23F1 ' + escH(tonight.prep_time), tonight.difficulty && escH(tonight.difficulty), tonight.makes_leftovers && '\uD83C\uDF71 Makes leftovers'].filter(Boolean).join(' \u00B7 ') + '</div>';
+  } else if (yesterday && yesterday.makes_leftovers) {
+    h += '<div class="t-title">Leftovers night \uD83C\uDF71</div><div class="t-meta">Enjoy the rest of ' + escH(yesterday.title) + '.</div>';
+  } else {
+    let next = null;
+    for (let o = 1; o < 7 && !next; o++) next = find(o);
+    h += '<div class="t-title">Nothing planned</div><div class="t-meta">' + (next ? 'Next up: ' + next.day + ', ' + escH(next.title) + '.' : 'Use up leftovers or keep it simple.') + '</div>';
+  }
+  if (tomorrow && tomorrow.prep_ahead) h += '<div class="t-prep">\u23F0 <b>For tomorrow</b> (' + escH(tomorrow.title) + '): ' + escH(tomorrow.prep_ahead) + '</div>';
+  el.innerHTML = h; el.classList.remove('hidden');
+}
+
+// ── BUDGET ───────────────────────────────────────────────────
+function listTotal() { let t = 0; forEachShopItem((c, it) => { t += itemCost(it); }); return t; }
+function parseCost(s) { return parseFloat(String(s || '').replace(/[^0-9.]/g, '')) || 0; }
+// How far the AI's estimates are off, learned from logged receipts (median of the last 6)
+function getCalibration() {
+  const log = readJSON('mp_spend', []).filter(e => e.est > 0 && e.actual > 0).slice(-6);
+  if (!log.length) return { factor: 1, n: 0 };
+  const r = log.map(e => e.actual / e.est).sort((a, b) => a - b);
+  const mid = r.length % 2 ? r[(r.length - 1) / 2] : (r[r.length / 2 - 1] + r[r.length / 2]) / 2;
+  return { factor: Math.min(1.8, Math.max(0.6, mid)), n: log.length };
+}
+function renderBudget() {
+  const el = $('budgetCard');
+  if (!state.plan) { el.classList.add('hidden'); return; }
+  const cal = getCalibration();
+  const est = listTotal() * cal.factor;
+  const budget = parseFloat(getProfile().budget) || 0;
+  const label = cal.n ? 'Adjusted using your last ' + cal.n + ' receipt' + (cal.n > 1 ? 's' : '') + '.' : 'AI estimate. Log your receipt in Shopping to sharpen it.';
+  const d = state.lastDelta;
+  const delta = d && Math.abs(d) >= 0.5 ? '<span class="delta ' + (d > 0 ? 'up' : 'down') + '">Last change ' + (d > 0 ? '+' : '\u2212') + '$' + Math.abs(d).toFixed(0) + '</span>' : '';
+  let h = '<div class="budget-top"><span class="section-label" style="margin:0;">This week\'s shop</span>' + delta + '</div>';
+  if (budget) {
+    const pct = est / budget;
+    h += '<div class="budget-top" style="margin-top:6px;"><strong>\u2248 $' + est.toFixed(0) + '</strong><span class="hint" style="margin:0;">of $' + budget.toFixed(0) + ' budget</span></div>'
+      + '<div class="bar-track"><div class="bar-fill' + (pct > 1 ? ' over' : pct > 0.9 ? ' warn' : '') + '" style="width:' + Math.min(100, pct * 100).toFixed(0) + '%"></div></div>'
+      + '<div class="hint" style="margin:0;">' + (pct > 1 ? '<b style="color:var(--danger)">$' + (est - budget).toFixed(0) + ' over budget.</b> ' : '$' + (budget - est).toFixed(0) + ' to spare. ') + label + '</div>';
+    if (pct > 1) h += '<button class="btn btn-pink" style="width:100%;margin-top:12px;" onclick="bringUnderBudget()">\uD83D\uDCB8 Swap the priciest meal for a cheaper one</button>';
+  } else {
+    h += '<div class="budget-top" style="margin-top:6px;"><strong>\u2248 $' + est.toFixed(0) + '</strong></div>'
+      + '<div class="hint" style="margin:4px 0 0;">' + label + ' <a href="#" onclick="showTab(\'settings\');return false;">Set a weekly budget</a> to track it.</div>';
+  }
+  el.innerHTML = h; el.classList.remove('hidden');
+}
+function bringUnderBudget() {
+  if (!state.plan || !state.plan.meals.length) return;
+  let idx = 0;
+  state.plan.meals.forEach((m, i) => { if (parseCost(m.estimated_cost_aud) > parseCost(state.plan.meals[idx].estimated_cost_aud)) idx = i; });
+  swapMeal(idx, { cheaper: true });
+}
+
+// ── RECEIPTS (ACTUAL SPEND) ──────────────────────────────────
+function saveActualSpend() {
+  const v = parseFloat($('actualSpend').value);
+  if (!(v > 0)) { toast('Enter your receipt total', 'error'); return; }
+  const log = readJSON('mp_spend', []);
+  const genId = state.currentGenId || Date.now();
+  const entry = { genId: genId, date: Date.now(), est: Math.round(listTotal() * 100) / 100, actual: Math.round(v * 100) / 100 };
+  const i = log.findIndex(e => e.genId === genId);
+  if (i >= 0) log[i] = entry; else log.push(entry);
+  localStorage.setItem('mp_spend', JSON.stringify(log.slice(-26)));
+  $('actualSpend').value = '';
+  renderSpendHistory(); renderBudget(); updateShoppingCost();
+  toast('Receipt saved', 'success');
+}
+function deleteSpend(genId) {
+  localStorage.setItem('mp_spend', JSON.stringify(readJSON('mp_spend', []).filter(e => e.genId !== genId)));
+  renderSpendHistory(); renderBudget(); updateShoppingCost();
+}
+function renderSpendHistory() {
+  const log = readJSON('mp_spend', []);
+  const el = $('spendHistory');
+  const mine = log.find(e => e.genId === state.currentGenId);
+  $('actualSpend').placeholder = mine ? 'Saved $' + mine.actual.toFixed(2) + '. Enter again to update' : 'Receipt total, e.g. 142.50';
+  if (!log.length) { el.innerHTML = ''; return; }
+  const budget = parseFloat(getProfile().budget) || 0;
+  const max = Math.max(budget, ...log.map(e => e.actual)) || 1;
+  const rows = log.slice(-8).reverse().map(e => {
+    const lbl = new Date(e.date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+    const over = budget && e.actual > budget;
+    return '<div class="spend-row"><span>' + lbl + '</span>'
+      + '<div class="mini"><span style="width:' + Math.min(100, e.actual / max * 100).toFixed(0) + '%;' + (over ? 'background:var(--danger);' : '') + '"></span></div>'
+      + '<strong>$' + e.actual.toFixed(0) + '</strong>'
+      + '<button class="x-btn" onclick="deleteSpend(' + e.genId + ')" aria-label="Delete">&#10005;</button></div>';
+  }).join('');
+  const cal = getCalibration();
+  let summary = '';
+  if (cal.n) {
+    const pct = Math.round((cal.factor - 1) * 100);
+    summary = Math.abs(pct) < 3 ? 'Your receipts match the AI\'s estimates closely.'
+      : 'Your shops cost about ' + Math.abs(pct) + '% ' + (pct > 0 ? 'more' : 'less') + ' than the AI estimated, so estimates are now adjusted ' + (pct > 0 ? 'up' : 'down') + '.';
+    if (budget) {
+      const recent = log.slice(-4);
+      const avg = recent.reduce((a, e) => a + e.actual, 0) / recent.length;
+      summary += ' Recent average: $' + avg.toFixed(0) + ' a week against a $' + budget.toFixed(0) + ' budget.';
+    }
+  }
+  el.innerHTML = '<div style="margin-top:14px;">' + rows + '</div>' + (summary ? '<div class="spend-summary">' + summary + '</div>' : '');
+}
+
+// ── CALENDAR EXPORT ──────────────────────────────────────────
+function icsEscape(s) { return String(s || '').replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\;'); }
+function icsFold(line) { // calendar files want lines of 75 characters or fewer
+  const out = []; let s = line;
+  while (s.length > 73) { out.push(s.slice(0, 73)); s = ' ' + s.slice(73); }
+  out.push(s); return out.join('\r\n');
+}
+function exportCalendar() {
+  if (!state.plan) return;
+  const meals = state.plan.meals.filter(m => DAYS.indexOf(m.day) >= 0);
+  if (!meals.length) { toast('Give your meals a day first', 'error'); return; }
+  const base = new Date(state.currentGenId || Date.now()); base.setHours(0, 0, 0, 0);
+  const pad = n => String(n).padStart(2, '0');
+  const fmt = (d, h) => d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + 'T' + pad(h) + '0000';
+  const jsDay = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  const now = new Date();
+  const stamp = now.getUTCFullYear() + pad(now.getUTCMonth() + 1) + pad(now.getUTCDate()) + 'T' + pad(now.getUTCHours()) + pad(now.getUTCMinutes()) + '00Z';
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Tillys Meal Planner//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH'];
+  meals.forEach((m, i) => {
+    const d = new Date(base); d.setDate(base.getDate() + ((jsDay[m.day] - base.getDay() + 7) % 7));
+    const need = m.ingredients && m.ingredients.need && m.ingredients.need.length ? 'To buy: ' + m.ingredients.need.join(', ') : '';
+    const desc = [getRecipeUrl(m), m.prep_ahead ? 'Prep ahead: ' + m.prep_ahead : '', need].filter(Boolean).join('\n');
+    lines.push('BEGIN:VEVENT', 'UID:' + (state.currentGenId || 0) + '-' + i + '@meal-planner', 'DTSTAMP:' + stamp,
+      'DTSTART:' + fmt(d, 18), 'DTEND:' + fmt(d, 19), 'SUMMARY:' + icsEscape('Dinner: ' + m.title), 'DESCRIPTION:' + icsEscape(desc));
+    if (m.prep_ahead) lines.push('BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + icsEscape('Prep for tomorrow: ' + m.prep_ahead), 'TRIGGER:-PT23H', 'END:VALARM');
+    lines.push('END:VEVENT');
+  });
+  lines.push('END:VCALENDAR');
+  const blob = new Blob([lines.map(icsFold).join('\r\n') + '\r\n'], { type: 'text/calendar' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'meal-plan.ics';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast('Calendar file saved. Open it to add the dinners', 'success');
 }
 
 // ── MODALS & MENUS ───────────────────────────────────────────
@@ -1319,6 +1687,7 @@ function closeMenus() {
 function menuAction(action, idx) {
   closeMenus();
   if (action === 'swap') swapMeal(idx);
+  else if (action === 'cheaper') swapMeal(idx, { cheaper: true });
   else if (action === 'ban') blacklistMeal(idx);
   else if (action === 'remove') deleteMeal(idx);
 }
@@ -1544,6 +1913,9 @@ async function generatePlan() {
   const recentTitles = state.history.filter(h => h.date > recentCutoff).map(h => h.title);
   if (recentTitles.length) userText += ' Avoid repeating: ' + recentTitles.slice(-15).join(', ') + '.';
   if (state.blacklist.length) userText += ' NEVER include: ' + state.blacklist.join(', ') + '.';
+  const carry = $('carryCheck').checked ? getCarryItems() : [];
+  if (carry.length) userText += ' POSSIBLY LEFT OVER from last week\'s shop (use up where it makes sense, don\'t force it): ' + carry.join(', ') + '.';
+  savePrefs();
 
   hideError();
   const steps = [
@@ -1562,8 +1934,12 @@ async function generatePlan() {
 
   try {
     const plan = await callAI(buildFullPrompt(), userText, FULL_SCHEMA, true);
-    if (!plan || !Array.isArray(plan.meals) || !plan.meals.length) throw new Error('Gemini returned no meals. Try again.');
+    if (!plan || !Array.isArray(plan.meals) || !plan.meals.length) throw new Error('The AI returned no meals. Try again.');
+    normalizeDays(plan.meals);
+    sortMealsByDay(plan.meals);
     state.plan = plan;
+    state.lastDelta = null;
+    planFormOpen = false;
     state.currentGenId = Date.now();
     state.undoMeal = null;
     plan.meals.forEach(m => state.history.push({ title: m.title, date: state.currentGenId, genId: state.currentGenId }));
@@ -1573,6 +1949,7 @@ async function generatePlan() {
     clearInterval(stepTimer);
     setGenerating(false);
     renderResults(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     toast('Your week is planned', 'success');
   } catch(e) {
     clearInterval(stepTimer);
@@ -1583,7 +1960,8 @@ async function generatePlan() {
 }
 
 // ── SWAP, BAN, DELETE, ADD ───────────────────────────────────
-async function swapMeal(idx) {
+async function swapMeal(idx, opts) {
+  opts = opts || {};
   if (state.swapInProgress || state.busy) { toast('One moment, still working on the last change','error'); return; }
   const meal = state.plan.meals[idx];
   const fridgeText = $('fridgeText').value.trim();
@@ -1603,16 +1981,18 @@ async function swapMeal(idx) {
   const recentTitles = state.history.filter(h => h.date > recentCutoff).map(h => h.title);
   if (recentTitles.length) userText += ' Try to avoid: ' + recentTitles.slice(-10).join(', ') + '.';
   if (state.blacklist.length) userText += ' NEVER include: ' + state.blacklist.join(', ') + '.';
+  if (opts.cheaper) userText += ' It MUST be clearly cheaper than the current meal (about ' + (meal.estimated_cost_aud || 'unknown') + ' total). Use budget-friendly ingredients such as chicken thighs, mince, eggs, legumes and seasonal veg.';
 
   state.undoMeal = { idx, meal };
   state.swapInProgress = true;
   const card = document.querySelector('[data-card="'+idx+'"]');
   if (card) card.classList.add('swapping');
-  toast('Finding something else…', '');
+  toast(opts.cheaper ? 'Finding something cheaper…' : 'Finding something else…', '');
 
   try {
     const newMeal = await callAI(SWAP_PROMPT, userText, MEAL_SCHEMA, true);
-    if (meal.day) newMeal.day = meal.day; // keep the day it was assigned to
+    newMeal.day = meal.day || null; // keep the day it was assigned to
+    if (meal.makes_leftovers && !opts.cheaper) newMeal.makes_leftovers = false;
     state.plan.meals[idx] = newMeal;
     state.history.push({ title: newMeal.title, date: Date.now(), genId: state.currentGenId });
     saveHistory();
@@ -1690,11 +2070,14 @@ async function submitAddMeal() {
   state.busy = true;
   try {
     const newMeal = await callAI(SWAP_PROMPT, userText, MEAL_SCHEMA, true);
+    newMeal.day = null;
     state.plan.meals.push(newMeal);
+    normalizeDays(state.plan.meals);
+    sortMealsByDay(state.plan.meals);
     state.history.push({ title: newMeal.title, date: Date.now(), genId: state.currentGenId });
     saveHistory();
     savePlan();
-    toast('Added ' + newMeal.title, 'success');
+    toast('Added ' + newMeal.title + (newMeal.day ? ' on ' + newMeal.day : ''), 'success');
     regenShoppingList();
   } catch(e) { toast('Couldn\'t add a meal: ' + e.message, 'error'); }
   finally { state.busy = false; renderMealCards(false); }
@@ -1723,13 +2106,19 @@ async function regenShoppingList() {
   if (profile.allergies) userText += ' Exclude: ' + profile.allergies + '.';
 
   $('listUpdating').classList.remove('hidden');
+  const before = listTotal();
   try {
     const sl = await callAI(SHOPPING_PROMPT, userText, SHOPPING_SCHEMA, false);
     if (seq !== shopListSeq) return; // a newer update is on its way
     state.plan.shopping_list = sl;
     if (customItems.length) state.plan.shopping_list['Extra Items'] = customItems;
     savePlan();
+    const factor = getCalibration().factor;
+    state.lastDelta = (listTotal() - before) * factor;
     renderShoppingList();
+    if (!state.undoMeal && Math.abs(state.lastDelta) >= 0.5) {
+      toast('Shopping list updated: ' + (state.lastDelta > 0 ? '+' : '\u2212') + '$' + Math.abs(state.lastDelta).toFixed(0) + ', now \u2248 $' + (listTotal() * factor).toFixed(0), state.lastDelta > 0 ? '' : 'success');
+    }
   } catch(e) {
     if (seq === shopListSeq) toast('Shopping list didn\'t update: ' + e.message, 'error');
   } finally {
@@ -1749,11 +2138,13 @@ function renderResults(animate) {
   $('results').classList.remove('hidden');
   renderMealCards(animate);
   renderShoppingList();
+  updatePlanFormVisibility();
 }
 
 function renderMealCards(animate) {
   const recentCutoff = Date.now() - 14*24*60*60*1000;
   const addMealCardHTML = '<div class="add-meal-card" onclick="openAddModal()">&#43; Add a meal</div>';
+  const showNutrition = getWeek().nutrition;
   updateFavSummary();
 
   $('mealCards').innerHTML = state.plan.meals.map((m, i) => {
@@ -1808,6 +2199,7 @@ function renderMealCards(animate) {
       + '<button class="icon-btn" aria-label="More options" onclick="toggleMenu(event,' + i + ')">⋯</button>'
       + '<div class="card-menu hidden" data-menu="' + i + '">'
       + '<button onclick="menuAction(\'swap\',' + i + ')">🔄 Swap for something else</button>'
+      + '<button onclick="menuAction(\'cheaper\',' + i + ')">💸 Cheaper alternative</button>'
       + '<button onclick="menuAction(\'ban\',' + i + ')">🚫 Never suggest again</button>'
       + '<button class="danger" onclick="menuAction(\'remove\',' + i + ')">🗑 Remove from plan</button>'
       + '</div></div></div>'
@@ -1815,7 +2207,9 @@ function renderMealCards(animate) {
       + '<p class="meal-desc">' + escH(m.description) + '</p>'
       + '<div class="badge-row">'
       + recentBadge
-      + (m.macros ? '<span class="badge badge-macros">🔥 ' + escH(m.macros) + '</span>' : '')
+      + (m.makes_leftovers ? '<span class="badge badge-leftover">🍱 Makes leftovers</span>' : '')
+      + (m.prep_ahead ? '<span class="badge badge-prep">⏰ ' + escH(m.prep_ahead) + '</span>' : '')
+      + (showNutrition && m.macros ? '<span class="badge badge-macros">🔥 ' + escH(m.macros) + '</span>' : '')
       + (m.prep_time ? '<span class="badge badge-time">⏱ ' + escH(m.prep_time) + '</span>' : '')
       + (m.difficulty ? '<span class="badge ' + diffClass(m.difficulty) + '">' + escH(m.difficulty) + '</span>' : '')
       + costBadge
@@ -1825,6 +2219,7 @@ function renderMealCards(animate) {
       + '<div class="rate-row"><span>' + (rating ? 'Your rating' : 'Cooked it? Rate it') + '</span><div class="stars">' + stars + '</div></div>'
       + '</div></div>';
   }).join('') + addMealCardHTML;
+  renderTonight();
 }
 
 function toggleFridgeAccordion(header) {
@@ -1842,6 +2237,7 @@ function renderShoppingList() {
   if (!hasPlan) { updateShopBadge(); return; }
 
   const sl = state.plan.shopping_list || {};
+  const store = STORES[getWeek().store];
   const aisles = [...AISLE_ORDER];
   if (sl['Extra Items'] && sl['Extra Items'].length > 0) aisles.push('Extra Items');
 
@@ -1856,6 +2252,7 @@ function renderShoppingList() {
         + '<label for="' + escH(key) + '">' + escH(name) + '</label>'
         + (qty ? '<span class="qty">' + escH(qty) + '</span>' : '')
         + (cost > 0 ? '<span class="item-cost">$' + cost.toFixed(2) + '</span>' : '')
+        + (store ? '<a class="store-link" href="' + escH(store.url(name)) + '" target="_blank" rel="noopener" aria-label="Find at ' + store.name + '">&#8599;</a>' : '')
         + (cat === 'Extra Items' ? '<button class="x-btn" onclick="removeExtraItem(' + itemIdx + ')" aria-label="Remove">&#10005;</button>' : '')
         + '</div>';
     }).join('');
@@ -1869,18 +2266,22 @@ function renderShoppingList() {
         + '<input type="number" id="newItemCost" class="input" placeholder="$" inputmode="decimal" style="max-width:76px;flex:none;" step="0.5">'
         + '<button class="btn btn-pink" onclick="addCustomItem()">Add</button>'
         + '</div></div>';
-  html += '<div class="shop-cost"><span>Still to buy</span><span id="dynamicTotalCost">~$0.00</span></div>';
+  html += '<div class="shop-cost"><span id="stillLabel">Still to buy</span><span id="dynamicTotalCost">~$0.00</span></div>';
   $('shoppingList').innerHTML = html;
 
   $('shoppingList').querySelectorAll('input[type=checkbox]').forEach(cb => {
     if (localStorage.getItem(cb.id) === 'true') cb.checked = true;
   });
   updateShoppingCost();
+  updateStoreLabels();
+  renderSpendHistory();
+  renderBudget();
 }
 
 function tickItem(cb) {
   if (cb.checked) localStorage.setItem(cb.id, 'true'); else localStorage.removeItem(cb.id);
   updateShoppingCost();
+  updateCarryRow();
 }
 
 function forEachShopItem(fn) {
@@ -1893,8 +2294,10 @@ function forEachShopItem(fn) {
 function updateShoppingCost() {
   let total = 0;
   forEachShopItem((cat, item, ticked) => { if (!ticked) total += itemCost(item); });
+  const cal = getCalibration();
   const costEl = $('dynamicTotalCost');
-  if (costEl) costEl.textContent = '~$' + total.toFixed(2);
+  if (costEl) costEl.textContent = '~$' + (total * cal.factor).toFixed(2);
+  if ($('stillLabel')) $('stillLabel').textContent = cal.n ? 'Still to buy (adjusted)' : 'Still to buy';
   updateShopBadge();
 }
 
@@ -2001,7 +2404,7 @@ function stopMic() {
 }
 
 // ── BACKUP ───────────────────────────────────────────────────
-var BACKUP_KEYS = ['mp_family','mp_fav_titles','mp_history','mp_blacklist','mp_ratings','mp_staples','mp_plan','mp_provider','mp_models','mp_custom_models','mp_theme','mp_fridge'];
+var BACKUP_KEYS = ['mp_family','mp_fav_titles','mp_history','mp_blacklist','mp_ratings','mp_staples','mp_plan','mp_provider','mp_models','mp_custom_models','mp_theme','mp_fridge','mp_prefs','mp_week','mp_spend'];
 function exportBackup() {
   const data = {};
   BACKUP_KEYS.forEach(k => { const v = localStorage.getItem(k); if (v != null) data[k] = v; });
@@ -2173,12 +2576,6 @@ zone.addEventListener('drop', e => {
     handlePhoto($('photoInput'));
   }
 });
-</script>
-<script>
-// Registers the service worker so the app can be installed (GitHub Pages, any HTTPS host, or localhost).
-if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname))) {
-  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
-}
 </script>
 </body>
 </html>
