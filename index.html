@@ -209,6 +209,28 @@
   .theme-switch { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
   .theme-switch .tag { justify-content: center; }
 
+  /* ── AI SETUP ───────────────────────────────────────────── */
+  .provider-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .provider { border: 1px solid var(--border); background: var(--surface2); border-radius: 16px; padding: 12px; cursor: pointer; text-align: left; font-family: inherit; color: var(--text); transition: all 0.15s; min-height: 64px; }
+  .provider strong { display: block; font-size: 14px; margin-bottom: 4px; }
+  .provider.active { border-color: var(--pink); background: var(--pink-soft); box-shadow: 0 0 0 2px var(--pink-soft); }
+  .pbadge { display: inline-block; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 2px 8px; }
+  .pbadge.free { background: var(--mint-soft); color: var(--mint); }
+  .pbadge.paid { background: var(--butter-soft); color: var(--butter); }
+  .provider .tick { float: right; color: var(--pink); font-weight: 700; }
+  .steps { margin: 0 0 12px 0; padding-left: 0; list-style: none; counter-reset: step; }
+  .steps li { counter-increment: step; position: relative; padding: 6px 0 6px 34px; font-size: 14px; line-height: 1.45; }
+  .steps li::before { content: counter(step); position: absolute; left: 0; top: 5px; width: 24px; height: 24px; border-radius: 50%; background: var(--pink-soft); color: var(--pink); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .steps .note { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .key-status { font-size: 13px; margin-top: 8px; min-height: 0; line-height: 1.45; }
+  .key-status.ok { color: var(--mint); }
+  .key-status.bad { color: var(--danger); }
+  .key-status.busy { color: var(--muted); }
+  .cost-box { background: var(--mint-soft); color: var(--mint); border: 1px solid var(--mint-border); border-radius: 14px; padding: 12px 14px; margin-top: 10px; font-size: 13px; line-height: 1.5; }
+  .cost-box strong { font-size: 15px; }
+  .cost-box .sub { color: var(--muted); font-size: 12px; display: block; margin-top: 4px; }
+  .warn-box { background: var(--butter-soft); color: var(--butter); border: 1px solid var(--butter-border); border-radius: 14px; padding: 12px 14px; font-size: 13px; line-height: 1.5; }
+
   /* ── BOTTOM NAV ─────────────────────────────────────────── */
   .bottom-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; background: var(--surface); border-top: 1px solid var(--border); padding: 6px 12px calc(6px + env(safe-area-inset-bottom)); display: flex; justify-content: center; }
   .bottom-nav .inner { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; width: 100%; max-width: 480px; }
@@ -241,7 +263,7 @@
   <div class="header">
     <div>
       <h1>&#10047; Meal Planner</h1>
-      <p>Powered by Gemini &middot; RecipeTin Eats inspired</p>
+      <p><span id="poweredBy">Powered by AI</span> &middot; RecipeTin Eats inspired</p>
     </div>
     <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" aria-label="Switch theme"></button>
   </div>
@@ -250,8 +272,8 @@
   <section class="tab-panel" id="tab-plan">
 
     <div class="notice hidden" id="keyNotice">
-      <span>Add your Gemini API key to get started.</span>
-      <button class="btn btn-pink" onclick="showTab('settings')">Open settings</button>
+      <span>Set up the AI to get started. It takes about 2 minutes, and there are free options.</span>
+      <button class="btn btn-pink" onclick="showTab('settings')">Set up</button>
     </div>
 
     <div class="card">
@@ -366,23 +388,32 @@
   <section class="tab-panel hidden" id="tab-settings">
     <h2 class="section-title" style="margin-top:4px;">Settings</h2>
 
-    <div class="card">
-      <div class="section-label">Gemini API key</div>
+    <div class="card" id="aiSetupCard">
+      <div class="section-label">AI setup</div>
+      <p class="hint" style="margin:0 0 12px;">The planner uses an AI service to pick recipes. Choose one and add its key. It takes about 2 minutes and there are free options.</p>
+
+      <label>1. Choose a provider</label>
+      <div class="provider-grid" id="providerGrid"></div>
+
+      <label style="margin-top:16px;">2. Get your key</label>
+      <ol class="steps" id="providerSteps"></ol>
+      <a class="btn btn-pink" id="providerLink" href="#" target="_blank" rel="noopener" style="width:100%;text-decoration:none;">Open site</a>
+
+      <label style="margin-top:16px;">3. Paste it here</label>
       <div class="row">
-        <input class="input" type="password" id="apiKey" placeholder="AIza&hellip;" autocomplete="off">
-        <button class="btn btn-pink" onclick="saveKey()">Save</button>
+        <input class="input" type="password" id="apiKey" placeholder="Paste your key" autocomplete="off" spellcheck="false" oninput="onKeyInput()">
+        <button class="btn btn-pink" id="testKeyBtn" onclick="saveAndTestKey()">Save and test</button>
       </div>
-      <p class="hint">Stored on this device only. <a href="https://aistudio.google.com/app/apikey" target="_blank">Get a free key</a></p>
-      <label style="margin-top:14px;">AI model</label>
-      <select class="input" id="modelSelect" onchange="saveModelChoice()">
-        <option value="auto">Auto (recommended)</option>
-        <option value="gemini-3.5-flash">gemini-3.5-flash</option>
-        <option value="gemini-flash-latest">gemini-flash-latest</option>
-        <option value="gemini-3.1-flash-lite">gemini-3.1-flash-lite (cheapest)</option>
-        <option value="custom">Custom model ID&hellip;</option>
-      </select>
-      <input class="input hidden" id="customModel" placeholder="gemini-4-flash" style="margin-top:8px;" oninput="saveModelChoice()">
+      <p class="key-status" id="keyStatus"></p>
+      <p class="hint">Stored on this device only, and sent only to the provider you choose.</p>
+
+      <label style="margin-top:16px;">4. Pick a model</label>
+      <select class="input" id="modelSelect" onchange="saveModelChoice()"></select>
+      <input class="input hidden" id="customModel" placeholder="Model ID" style="margin-top:8px;" spellcheck="false" oninput="saveModelChoice()">
+      <div class="cost-box" id="costEstimate"></div>
       <p class="hint" id="modelStatus"></p>
+
+      <button class="btn" style="width:100%;margin-top:14px;" onclick="openShareSetup()">&#128279; Share setup with family</button>
     </div>
 
     <div class="card">
@@ -463,6 +494,29 @@
     <div class="modal-btns">
       <button class="btn" onclick="closeModal()">Keep current</button>
       <button class="btn-primary" onclick="closeModal(); generatePlan()">New plan</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="shareSetupModal">
+  <div class="modal">
+    <h3>&#128279; Share your setup</h3>
+    <p>Send this link to family so they can start planning without making their own key.</p>
+    <div class="warn-box">Anyone with this link can use your key, and you pay for what they use. Only send it to people you trust. You can cancel the key at any time on <span id="shareProviderName">the provider's</span> website.</div>
+    <div class="modal-btns" style="margin-top:14px;">
+      <button class="btn" onclick="closeShareSetup()">Cancel</button>
+      <button class="btn-primary" onclick="shareSetupLink()">Share link</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="importSetupModal">
+  <div class="modal">
+    <h3>&#10047; Use this setup?</h3>
+    <p id="importSetupText">Someone shared their AI setup with you.</p>
+    <div class="modal-btns">
+      <button class="btn" onclick="declineImportSetup()">No thanks</button>
+      <button class="btn-primary" onclick="acceptImportSetup()">Use it</button>
     </div>
   </div>
 </div>
@@ -805,11 +859,10 @@ function getRatedTitles(test) {
 // ── INIT ─────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   applyTheme(currentTheme());
-  const k = localStorage.getItem('gemini_key');
-  if (k) $('apiKey').value = k;
+  migrateOldSettings();
   $('fridgeText').value = localStorage.getItem('mp_fridge') || '';
   $('staplesText').value = localStorage.getItem('mp_staples') || '';
-  loadModelChoice();
+  renderSetup();
   loadProfile();
   loadHistory();
   loadFavourites();
@@ -817,50 +870,341 @@ window.addEventListener('DOMContentLoaded', () => {
   updateStaplesHint();
   updateKeyNotice();
   loadPlan();
+  checkSetupLink();
 });
 
-function saveKey() {
-  const k = $('apiKey').value.trim();
-  if (!k) return;
-  localStorage.setItem('gemini_key', k);
-  updateKeyNotice();
-  toast('API key saved','success');
-}
-function getKey() { return $('apiKey').value.trim() || localStorage.getItem('gemini_key') || ''; }
-function updateKeyNotice() { $('keyNotice').classList.toggle('hidden', !!getKey()); }
+// ── AI PROVIDERS ─────────────────────────────────────────────
+// Prices are USD per 1M tokens (input / output), checked November 2026.
+// Providers change prices and retire models, so update these when needed.
+var USD_TO_AUD = 1.42;
+var PROVIDERS = {
+  gemini: {
+    name: 'Google Gemini', short: 'Gemini', badge: 'Free tier', free: true,
+    blurb: 'Free, no card needed',
+    keyUrl: 'https://aistudio.google.com/app/apikey', linkText: 'Open Google AI Studio',
+    keyPrefix: 'AIza',
+    steps: [
+      ['Open Google AI Studio and sign in with any Google account.', ''],
+      ['Tap <b>Create API key</b>. If it asks, accept the terms and let it create a project.', ''],
+      ['Copy the key and paste it below.', 'It starts with AIza. Free to use, with a daily limit that\'s plenty for meal planning.']
+    ],
+    models: [
+      { id: 'auto', label: 'Auto (recommended)', inp: 1.50, out: 9.00, freeTier: true, note: 'Uses the best Flash model available and skips retired ones.' },
+      { id: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash', inp: 1.50, out: 9.00, freeTier: true },
+      { id: 'gemini-3.5-flash-lite', label: 'Gemini 3.5 Flash-Lite (cheaper)', inp: 0.30, out: 2.50, freeTier: true },
+      { id: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash-Lite (cheapest)', inp: 0.25, out: 1.50, freeTier: true },
+      { id: 'custom', label: 'Custom model ID…' }
+    ]
+  },
+  openrouter: {
+    name: 'OpenRouter', short: 'OpenRouter', badge: 'Free models', free: true,
+    blurb: 'One key, many models',
+    keyUrl: 'https://openrouter.ai/settings/keys', linkText: 'Open OpenRouter',
+    keyPrefix: 'sk-or-',
+    steps: [
+      ['Open OpenRouter and sign in. Signing in with Google works.', ''],
+      ['Go to <b>Keys</b>, tap <b>Create key</b> and name it "Meal planner".', ''],
+      ['Copy the key and paste it below.', 'It starts with sk-or-. Free models need no card, but can be slower and change over time.']
+    ],
+    models: [
+      { id: 'openrouter/free', label: 'Free models (no cost)', inp: 0, out: 0, note: 'OpenRouter picks a free model that can read photos and return a plan.' },
+      { id: 'openai/gpt-6-luna', label: 'GPT-6 Luna (paid, very cheap)', inp: 0.10, out: 0.50 },
+      { id: 'custom', label: 'Custom model ID…', note: 'Find model IDs at openrouter.ai/models.' }
+    ]
+  },
+  openai: {
+    name: 'OpenAI', short: 'OpenAI', badge: 'Paid', free: false,
+    blurb: 'Makers of ChatGPT',
+    keyUrl: 'https://platform.openai.com/api-keys', linkText: 'Open OpenAI Platform',
+    keyPrefix: 'sk-',
+    steps: [
+      ['Open the OpenAI Platform and sign in.', 'A ChatGPT subscription doesn\'t include API use. It\'s billed separately.'],
+      ['Add credit under <b>Settings → Billing</b>. The minimum is US$5, which lasts a very long time here.', ''],
+      ['Go to <b>API keys</b>, tap <b>Create new secret key</b>, then copy it and paste it below.', 'It starts with sk-.']
+    ],
+    models: [
+      { id: 'gpt-6-luna', label: 'GPT-6 Luna (recommended)', inp: 0.10, out: 0.50 },
+      { id: 'gpt-5.4-mini', label: 'GPT-5.4 mini', inp: 0.75, out: 4.50 },
+      { id: 'gpt-5.5', label: 'GPT-5.5 (premium)', inp: 5.00, out: 30.00 },
+      { id: 'custom', label: 'Custom model ID…' }
+    ]
+  },
+  claude: {
+    name: 'Claude (Anthropic)', short: 'Claude', badge: 'Paid', free: false,
+    blurb: 'Great at following rules',
+    keyUrl: 'https://platform.claude.com/settings/keys', linkText: 'Open Claude Console',
+    keyPrefix: 'sk-ant-',
+    steps: [
+      ['Open the Claude Console and sign in or create an account.', 'A Claude.ai subscription doesn\'t include API use. It\'s billed separately.'],
+      ['Add credit under <b>Billing</b>. A few dollars lasts a long time here.', ''],
+      ['Go to <b>API keys</b>, tap <b>Create key</b>, then copy it and paste it below.', 'It starts with sk-ant-.']
+    ],
+    models: [
+      { id: 'claude-haiku-5-5', label: 'Claude Haiku 5.5 (recommended)', inp: 0.10, out: 0.50 },
+      { id: 'claude-sonnet-5-5', label: 'Claude Sonnet 5.5 (premium)', inp: 2.00, out: 10.00 },
+      { id: 'custom', label: 'Custom model ID…' }
+    ]
+  }
+};
+var PROVIDER_ORDER = ['gemini', 'openrouter', 'openai', 'claude'];
 
-// ── MODEL CHOICE ─────────────────────────────────────────────
-// Google retires model IDs regularly (gemini-2.5-flash was shut down Oct 2026).
-// "Auto" tries these in order and skips any that are retired or unavailable.
-var AUTO_MODELS = ['gemini-flash-latest', 'gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-flash-lite-latest'];
+// Typical tokens for a 5-dinner plan with a fridge photo, and for a swap (incl. list refresh).
+// Output includes an allowance for "thinking" tokens, which most models bill as output.
+var PLAN_TOKENS = { inp: 3500, out: 5000 };
+var SWAP_TOKENS = { inp: 2200, out: 3200 };
+
+function getProvider() { const p = localStorage.getItem('mp_provider'); return PROVIDERS[p] ? p : 'gemini'; }
+function getKeys() { return readJSON('mp_keys', {}); }
+function getKey(p) { return (getKeys()[p || getProvider()] || '').trim(); }
+function getModelId(p) {
+  p = p || getProvider();
+  const saved = readJSON('mp_models', {})[p];
+  const models = PROVIDERS[p].models;
+  return models.some(m => m.id === saved) ? saved : models[0].id;
+}
+function getCustomModel(p) { return (readJSON('mp_custom_models', {})[p || getProvider()] || '').trim(); }
+function getEffectiveModel(p) {
+  p = p || getProvider();
+  const id = getModelId(p);
+  return id === 'custom' ? getCustomModel(p) : id;
+}
+function setJSONKey(store, k, v) { const o = readJSON(store, {}); o[k] = v; localStorage.setItem(store, JSON.stringify(o)); }
+
+// Move settings from earlier versions (Gemini-only) to the new per-provider format
+function migrateOldSettings() {
+  const oldKey = localStorage.getItem('gemini_key');
+  if (oldKey && !getKeys().gemini) setJSONKey('mp_keys', 'gemini', oldKey);
+  const oldModel = localStorage.getItem('mp_model');
+  if (oldModel && !readJSON('mp_models', {}).gemini) setJSONKey('mp_models', 'gemini', PROVIDERS.gemini.models.some(m => m.id === oldModel) ? oldModel : 'auto');
+  const oldCustom = localStorage.getItem('mp_model_custom');
+  if (oldCustom && !readJSON('mp_custom_models', {}).gemini) setJSONKey('mp_custom_models', 'gemini', oldCustom);
+  localStorage.removeItem('gemini_key'); localStorage.removeItem('mp_model'); localStorage.removeItem('mp_model_custom');
+}
+
+// ── SETUP UI ─────────────────────────────────────────────────
+function renderSetup() {
+  const p = getProvider();
+  const cfg = PROVIDERS[p];
+  $('providerGrid').innerHTML = PROVIDER_ORDER.map(id => {
+    const c = PROVIDERS[id];
+    const hasKey = !!getKey(id);
+    return '<button class="provider' + (id === p ? ' active' : '') + '" onclick="selectProvider(\'' + id + '\')">'
+      + (hasKey ? '<span class="tick" title="Key saved">✓</span>' : '')
+      + '<strong>' + escH(c.short) + '</strong>'
+      + '<span class="pbadge ' + (c.free ? 'free' : 'paid') + '">' + escH(c.badge) + '</span>'
+      + '<span class="hint" style="display:block;margin-top:4px;">' + escH(c.blurb) + '</span>'
+      + '</button>';
+  }).join('');
+  $('providerSteps').innerHTML = cfg.steps.map(s => '<li>' + s[0] + (s[1] ? '<span class="note">' + escH(s[1]) + '</span>' : '') + '</li>').join('');
+  $('providerLink').href = cfg.keyUrl;
+  $('providerLink').textContent = cfg.linkText + ' ↗';
+  $('apiKey').value = getKey(p);
+  $('apiKey').placeholder = 'Paste your key (starts with ' + cfg.keyPrefix + ')';
+  setKeyStatus(getKey(p) ? 'Key saved.' : '', getKey(p) ? 'ok' : '');
+
+  $('modelSelect').innerHTML = cfg.models.map(m => '<option value="' + escH(m.id) + '">' + escH(m.label) + '</option>').join('');
+  $('modelSelect').value = getModelId(p);
+  $('customModel').value = getCustomModel(p);
+  $('customModel').classList.toggle('hidden', getModelId(p) !== 'custom');
+  $('poweredBy').textContent = 'Powered by ' + cfg.short;
+  updateModelStatus();
+  renderCostEstimate();
+}
+
+function selectProvider(p) {
+  if (!PROVIDERS[p]) return;
+  localStorage.setItem('mp_provider', p);
+  renderSetup();
+  updateKeyNotice();
+}
+
+function onKeyInput() {
+  const v = $('apiKey').value.trim();
+  const cfg = PROVIDERS[getProvider()];
+  // Spot keys pasted into the wrong provider and point the person to the right one
+  const match = PROVIDER_ORDER.filter(id => id !== getProvider()).find(id => {
+    const pre = PROVIDERS[id].keyPrefix;
+    return v.indexOf(pre) === 0 && pre.length > cfg.keyPrefix.length;
+  });
+  if (v && match) setKeyStatus('This looks like a ' + PROVIDERS[match].short + ' key. Tap ' + PROVIDERS[match].short + ' above first.', 'bad');
+  else if (v && v.indexOf(cfg.keyPrefix) !== 0) setKeyStatus(cfg.short + ' keys usually start with ' + cfg.keyPrefix + '. Check you copied all of it.', 'bad');
+  else setKeyStatus('', '');
+}
+
+function setKeyStatus(msg, cls) {
+  const el = $('keyStatus');
+  el.textContent = msg;
+  el.className = 'key-status' + (cls ? ' ' + cls : '');
+}
+
+async function saveAndTestKey() {
+  const p = getProvider();
+  const k = $('apiKey').value.trim().replace(/\s+/g, '');
+  if (!k) { setKeyStatus('Paste your key first.', 'bad'); return; }
+  setJSONKey('mp_keys', p, k);
+  updateKeyNotice();
+  renderSetupGridOnly();
+  const btn = $('testKeyBtn');
+  btn.disabled = true;
+  setKeyStatus('Checking your key with ' + PROVIDERS[p].short + '…', 'busy');
+  try {
+    await testKey(p, k);
+    setKeyStatus('✓ Key works. You\'re ready to plan.', 'ok');
+    toast('Key saved and working', 'success');
+  } catch(e) {
+    setKeyStatus('Key saved, but: ' + e.message, 'bad');
+  } finally { btn.disabled = false; }
+}
+function renderSetupGridOnly() {
+  const scroll = window.scrollY; const status = [$('keyStatus').textContent, $('keyStatus').className];
+  renderSetup(); window.scrollTo(0, scroll);
+  $('keyStatus').textContent = status[0]; $('keyStatus').className = status[1];
+}
+
+async function testKey(p, key) {
+  let res;
+  try {
+    if (p === 'gemini') res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=1', { headers: { 'x-goog-api-key': key } });
+    else if (p === 'openai') res = await fetch('https://api.openai.com/v1/models', { headers: { 'Authorization': 'Bearer ' + key } });
+    else if (p === 'openrouter') res = await fetch('https://openrouter.ai/api/v1/key', { headers: { 'Authorization': 'Bearer ' + key } });
+    else if (p === 'claude') res = await fetch('https://api.anthropic.com/v1/models?limit=1', { headers: claudeHeaders(key) });
+  } catch(e) { throw new Error('couldn\'t reach ' + PROVIDERS[p].short + '. Check your internet connection.'); }
+  if (res.ok) return true;
+  const err = await res.json().catch(() => ({}));
+  throw new Error(friendlyError(p, res.status, extractErrMsg(err), err));
+}
 
 function saveModelChoice() {
+  const p = getProvider();
   const sel = $('modelSelect').value;
-  const custom = $('customModel');
-  custom.classList.toggle('hidden', sel !== 'custom');
-  localStorage.setItem('mp_model', sel);
-  localStorage.setItem('mp_model_custom', custom.value.trim());
-  updateModelStatus();
-}
-function loadModelChoice() {
-  const sel = localStorage.getItem('mp_model') || 'auto';
-  $('modelSelect').value = sel;
-  $('customModel').value = localStorage.getItem('mp_model_custom') || '';
+  setJSONKey('mp_models', p, sel);
   $('customModel').classList.toggle('hidden', sel !== 'custom');
+  setJSONKey('mp_custom_models', p, $('customModel').value.trim());
   updateModelStatus();
+  renderCostEstimate();
 }
 function updateModelStatus() {
+  const p = getProvider();
+  const m = PROVIDERS[p].models.find(x => x.id === getModelId(p));
   const ok = localStorage.getItem('mp_model_ok');
-  const sel = localStorage.getItem('mp_model') || 'auto';
-  $('modelStatus').textContent = (sel === 'auto' && ok) ? 'Last worked with: ' + ok : '';
+  let txt = m && m.note ? m.note : '';
+  if (p === 'gemini' && getModelId(p) === 'auto' && ok) txt += (txt ? ' ' : '') + 'Last worked with ' + ok + '.';
+  $('modelStatus').textContent = txt;
 }
-function getModelCandidates() {
-  const sel = localStorage.getItem('mp_model') || 'auto';
-  if (sel === 'custom') {
-    const c = (localStorage.getItem('mp_model_custom') || '').trim();
-    return c ? [c] : AUTO_MODELS.slice();
+
+// ── COST ESTIMATE ────────────────────────────────────────────
+function costUSD(m, t) { return (t.inp * m.inp + t.out * m.out) / 1e6; }
+function fmtAUD(usd) {
+  const aud = usd * USD_TO_AUD;
+  if (aud === 0) return 'Free';
+  if (aud < 0.01) return 'under 1¢';
+  if (aud < 1) return Math.round(aud * 100) + '¢';
+  return 'A$' + aud.toFixed(2);
+}
+function renderCostEstimate() {
+  const p = getProvider();
+  const m = PROVIDERS[p].models.find(x => x.id === getModelId(p));
+  const el = $('costEstimate');
+  if (!m || m.inp == null) {
+    el.innerHTML = '<strong>Cost depends on the model</strong><span class="sub">'
+      + (p === 'openrouter' ? 'Check the price per million tokens at openrouter.ai/models. A plan uses about 3,500 input and 5,000 output tokens.' : 'Check the provider\'s price list. A plan uses about 3,500 input and 5,000 output tokens.')
+      + '</span>';
+    return;
   }
-  if (sel !== 'auto') return [sel];
+  const plan = costUSD(m, PLAN_TOKENS), swap = costUSD(m, SWAP_TOKENS);
+  const month = (plan + swap * 3) * 52 / 12; // 1 plan and 3 swaps a week
+  if (plan === 0) {
+    el.innerHTML = '<strong>Free</strong> to plan, swap and add meals.<span class="sub">Free models have usage limits and can be slower or busy at times.</span>';
+    return;
+  }
+  const lines = '<strong>≈ ' + fmtAUD(plan) + ' per plan</strong> · ' + fmtAUD(swap) + ' per swap'
+    + '<span class="sub">About ' + fmtAUD(month) + ' a month if you plan weekly and swap 3 meals. Estimate for 5 dinners with a photo; providers bill in US dollars.</span>';
+  el.innerHTML = m.freeTier
+    ? '<strong>Free</strong> on Google\'s free tier, which has a daily limit that\'s plenty for meal planning.<span class="sub">If you turn on paid billing: ≈ ' + fmtAUD(plan) + ' per plan, ' + fmtAUD(swap) + ' per swap.</span>'
+    : lines;
+}
+
+// ── FIRST-RUN NOTICE ─────────────────────────────────────────
+function updateKeyNotice() { $('keyNotice').classList.toggle('hidden', !!getKey()); }
+
+// ── SHARE SETUP LINK ─────────────────────────────────────────
+// The setup sits after # in the link, so it's never sent to any web server.
+function b64urlEncode(str) { return btoa(unescape(encodeURIComponent(str))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+function b64urlDecode(str) { str = str.replace(/-/g, '+').replace(/_/g, '/'); while (str.length % 4) str += '='; return decodeURIComponent(escape(atob(str))); }
+
+function openShareSetup() {
+  if (!getKey()) { setKeyStatus('Add and save a key before sharing.', 'bad'); return; }
+  $('shareProviderName').textContent = PROVIDERS[getProvider()].short + '\'s';
+  $('shareSetupModal').classList.add('show');
+}
+function closeShareSetup() { $('shareSetupModal').classList.remove('show'); }
+function buildSetupLink() {
+  const p = getProvider();
+  const payload = { v: 1, p: p, k: getKey(p), m: getModelId(p) };
+  if (payload.m === 'custom') payload.c = getCustomModel(p);
+  return location.origin + location.pathname + '#setup=' + b64urlEncode(JSON.stringify(payload));
+}
+function shareSetupLink() {
+  closeShareSetup();
+  const link = buildSetupLink();
+  if (location.protocol === 'file:') toast('Heads up: links only work once the app is online', 'error');
+  const text = 'Here\'s my meal planner setup. Open this link and tap "Use it":\n' + link;
+  if (navigator.share) {
+    navigator.share({ title: 'Meal planner setup', text: text }).catch(err => { if (err && err.name !== 'AbortError') fallbackCopy(link, () => toast('Setup link copied', 'success')); });
+  } else if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(link).then(() => toast('Setup link copied', 'success')).catch(() => fallbackCopy(link, () => toast('Setup link copied', 'success')));
+  } else fallbackCopy(link, () => toast('Setup link copied', 'success'));
+}
+
+var pendingSetup = null;
+function checkSetupLink() {
+  const m = location.hash.match(/^#setup=([A-Za-z0-9_-]+)/);
+  if (!m) return;
+  try {
+    const s = JSON.parse(b64urlDecode(m[1]));
+    if (!s || !PROVIDERS[s.p] || !s.k) throw new Error('bad');
+    pendingSetup = s;
+    const model = PROVIDERS[s.p].models.find(x => x.id === s.m);
+    $('importSetupText').textContent = 'Someone shared their AI setup with you: ' + PROVIDERS[s.p].name
+      + (model ? ' using ' + (s.m === 'custom' ? (s.c || 'a custom model') : model.label.replace(/ \(.*\)$/, '')) : '')
+      + '. Their key will be saved on this device so you can start planning straight away.'
+      + (getKey(s.p) ? ' It replaces the ' + PROVIDERS[s.p].short + ' key you already have.' : '');
+    $('importSetupModal').classList.add('show');
+  } catch(e) {
+    toast('That setup link didn\'t work. Ask for a new one.', 'error');
+    clearSetupHash();
+  }
+}
+function clearSetupHash() { history.replaceState(null, '', location.pathname + location.search); }
+function acceptImportSetup() {
+  const s = pendingSetup;
+  $('importSetupModal').classList.remove('show');
+  clearSetupHash();
+  if (!s) return;
+  setJSONKey('mp_keys', s.p, s.k);
+  if (s.m && PROVIDERS[s.p].models.some(x => x.id === s.m)) setJSONKey('mp_models', s.p, s.m);
+  if (s.c) setJSONKey('mp_custom_models', s.p, s.c);
+  localStorage.setItem('mp_provider', s.p);
+  pendingSetup = null;
+  renderSetup();
+  updateKeyNotice();
+  toast('All set. Time to plan your week', 'success');
+}
+function declineImportSetup() {
+  pendingSetup = null;
+  $('importSetupModal').classList.remove('show');
+  clearSetupHash();
+}
+
+// ── GEMINI MODEL FALLBACK ────────────────────────────────────
+// Google retires model IDs regularly (gemini-2.5-flash was shut down Oct 2026).
+// "Auto" tries these in order and skips any that are retired or unavailable.
+var AUTO_MODELS = ['gemini-flash-latest', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-flash-lite-latest'];
+
+function getGeminiCandidates() {
+  const id = getModelId('gemini');
+  if (id === 'custom') { const c = getCustomModel('gemini'); return c ? [c] : AUTO_MODELS.slice(); }
+  if (id !== 'auto') return [id];
   const ok = localStorage.getItem('mp_model_ok');
   const list = AUTO_MODELS.slice();
   if (ok) { const i = list.indexOf(ok); if (i > 0) { list.splice(i,1); list.unshift(ok); } else if (i < 0) list.unshift(ok); }
@@ -979,72 +1323,175 @@ function menuAction(action, idx) {
   else if (action === 'remove') deleteMeal(idx);
 }
 
-// ── GEMINI ───────────────────────────────────────────────────
-async function callGeminiModel(model, key, body) {
-  const res = await fetch(
-    'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent',
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-      body: JSON.stringify(body)
-    }
-  );
-  if (!res.ok) {
-    const err = await res.json().catch(()=>({}));
-    const e = new Error(err.error?.message || 'API error ' + res.status);
-    e.status = res.status;
-    throw e;
-  }
-  const data = await res.json();
-  const cand = data.candidates?.[0];
-  if (!cand) {
-    const reason = data.promptFeedback?.blockReason;
-    throw new Error(reason ? 'Gemini blocked the request (' + reason + '). Try a different photo or wording.' : 'Gemini returned no answer. Try again.');
-  }
-  // Join all text parts, skipping any "thought" parts newer models may return
-  const text = (cand.content?.parts || []).filter(p => p.text && !p.thought).map(p => p.text).join('');
-  if (!text) throw new Error('Gemini returned an empty answer' + (cand.finishReason ? ' (' + cand.finishReason + ')' : '') + '. Try again.');
-  try { return JSON.parse(text); }
-  catch(e) {
-    throw new Error(cand.finishReason === 'MAX_TOKENS'
-      ? 'The answer was cut off (too long). Try fewer meals.'
-      : 'Couldn\'t read Gemini\'s answer. Try again.');
-  }
+// ── AI CALLS ─────────────────────────────────────────────────
+// One entry point for every provider. Returns parsed JSON that matches `schema`.
+async function callAI(systemPrompt, userText, schema, withPhoto) {
+  const p = getProvider();
+  const key = getKey(p);
+  if (!key) throw new Error('No AI key yet. Set one up in Settings.');
+  const model = getEffectiveModel(p);
+  if (!model) throw new Error('Enter a model ID in Settings, or pick one from the list.');
+  const photo = (withPhoto && state.photoB64) ? { mime: state.photoMime, data: state.photoB64 } : null;
+  if (p === 'gemini') return callGemini(key, systemPrompt, userText, schema, photo);
+  if (p === 'claude') return callClaude(key, model, systemPrompt, userText, schema, photo);
+  return callOpenAICompatible(p, key, model, systemPrompt, userText, schema, photo);
 }
 
-async function callGemini(systemPrompt, messages, schema) {
-  const key = getKey();
-  if (!key) throw new Error('No API key yet. Add it in Settings.');
+// Convert the Gemini-style schema used above into standard JSON Schema
+function toJsonSchema(s) {
+  const t = String(s.type).toLowerCase();
+  const o = { type: t };
+  if (t === 'object') {
+    o.properties = {};
+    Object.keys(s.properties || {}).forEach(k => { o.properties[k] = toJsonSchema(s.properties[k]); });
+    o.required = s.required || Object.keys(o.properties);
+    o.additionalProperties = false;
+  } else if (t === 'array') o.items = toJsonSchema(s.items);
+  return o;
+}
+
+function extractErrMsg(err) {
+  if (!err) return '';
+  if (typeof err.error === 'string') return err.error;
+  return (err.error && (err.error.message || err.error.code)) || err.message || '';
+}
+
+// Turn provider errors into plain-English fixes
+function friendlyError(p, status, msg, raw) {
+  const name = PROVIDERS[p].short;
+  const m = (msg || '').toLowerCase();
+  const code = raw && raw.error && (raw.error.code || raw.error.type || raw.error.status) || '';
+  if (status === 401 || (status === 400 && /api key not valid|invalid api key|api_key_invalid/.test(m)) || (status === 403 && /api key|permission/.test(m) && p !== 'openrouter'))
+    return 'that key wasn\'t accepted by ' + name + '. Check you copied all of it, or create a new one.';
+  if (status === 402 || /insufficient_quota|credit balance|insufficient credits|billing/.test(m + ' ' + code))
+    return 'your ' + name + ' account is out of credit. Add some under Billing on their website, then try again.';
+  if (status === 429) return name + ' says you\'ve hit a usage limit. Wait a minute and try again.';
+  if (status === 529 || status === 503 || /overloaded|unavailable/.test(m)) return name + ' is busy right now. Try again in a moment.';
+  if (status === 404 && p !== 'gemini') return 'that model isn\'t available on your ' + name + ' account. Pick another in Settings.';
+  return (msg || ('error ' + status));
+}
+
+async function postJSON(p, url, headers, body) {
+  let res;
+  try { res = await fetch(url, { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, headers), body: JSON.stringify(body) }); }
+  catch(e) { const err = new Error('Couldn\'t reach ' + PROVIDERS[p].short + '. Check your internet connection.'); err.status = 0; throw err; }
+  if (!res.ok) {
+    const raw = await res.json().catch(() => ({}));
+    const msg = extractErrMsg(raw);
+    const err = new Error(friendlyError(p, res.status, msg, raw).replace(/^./, c => c.toUpperCase()));
+    err.status = res.status; err.rawMessage = msg;
+    throw err;
+  }
+  return res.json();
+}
+
+// Parse JSON even if a model wraps it in ``` fences or adds a sentence around it
+function parseLooseJSON(text) {
+  try { return JSON.parse(text); } catch(e) {}
+  const t = String(text || '').replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '');
+  try { return JSON.parse(t); } catch(e) {}
+  const a = t.indexOf('{'), b = t.lastIndexOf('}');
+  if (a >= 0 && b > a) return JSON.parse(t.slice(a, b + 1));
+  throw new Error('no json');
+}
+
+// ── Gemini ──
+async function callGemini(key, systemPrompt, userText, schema, photo) {
+  const parts = [{ text: userText }];
+  if (photo) parts.unshift({ inlineData: { mimeType: photo.mime, data: photo.data } });
   const body = {
     systemInstruction: { parts: [{ text: systemPrompt }] },
-    contents: messages,
+    contents: [{ role: 'user', parts: parts }],
     generationConfig: { responseMimeType: 'application/json', responseSchema: schema }
   };
-  const models = getModelCandidates();
-  const isAuto = (localStorage.getItem('mp_model') || 'auto') === 'auto';
+  const models = getGeminiCandidates();
+  const isAuto = getModelId('gemini') === 'auto';
   let lastErr = null;
   for (let i = 0; i < models.length; i++) {
     try {
-      const out = await callGeminiModel(models[i], key, body);
-      if (isAuto && localStorage.getItem('mp_model_ok') !== models[i]) {
-        localStorage.setItem('mp_model_ok', models[i]);
-        updateModelStatus();
-      }
+      const data = await postJSON('gemini', 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(models[i]) + ':generateContent', { 'x-goog-api-key': key }, body);
+      const out = readGeminiResponse(data);
+      if (isAuto && localStorage.getItem('mp_model_ok') !== models[i]) { localStorage.setItem('mp_model_ok', models[i]); updateModelStatus(); }
       return out;
     } catch(e) {
       lastErr = e;
-      if (!isModelUnavailable(e.status, e.message)) throw e; // real error (bad key, network…) — stop here
+      if (!isModelUnavailable(e.status, e.rawMessage || e.message)) throw e; // real error (bad key, network…) — stop here
     }
   }
   if (isAuto && localStorage.getItem('mp_model_ok')) { localStorage.removeItem('mp_model_ok'); updateModelStatus(); }
   throw new Error((isAuto ? 'None of the Gemini models responded. ' : 'Model "' + models[0] + '" is unavailable. Try Auto in Settings. ')
-    + (lastErr ? '(' + lastErr.message + ')' : ''));
+    + (lastErr ? '(' + (lastErr.rawMessage || lastErr.message) + ')' : ''));
+}
+function readGeminiResponse(data) {
+  const cand = data.candidates && data.candidates[0];
+  if (!cand) {
+    const reason = data.promptFeedback && data.promptFeedback.blockReason;
+    throw new Error(reason ? 'Gemini blocked the request (' + reason + '). Try a different photo or wording.' : 'Gemini returned no answer. Try again.');
+  }
+  // Join all text parts, skipping any "thought" parts newer models may return
+  const text = ((cand.content && cand.content.parts) || []).filter(p => p.text && !p.thought).map(p => p.text).join('');
+  if (!text) throw new Error('Gemini returned an empty answer' + (cand.finishReason ? ' (' + cand.finishReason + ')' : '') + '. Try again.');
+  try { return parseLooseJSON(text); }
+  catch(e) { throw new Error(cand.finishReason === 'MAX_TOKENS' ? 'The answer was cut off (too long). Try fewer meals.' : 'Couldn\'t read the AI\'s answer. Try again.'); }
 }
 
-function buildParts(text) {
-  const parts = [{ text }];
-  if (state.photoB64) parts.unshift({ inlineData: { mimeType: state.photoMime, data: state.photoB64 } });
-  return parts;
+// ── OpenAI and OpenRouter (same API shape) ──
+async function callOpenAICompatible(p, key, model, systemPrompt, userText, schema, photo) {
+  const url = p === 'openai' ? 'https://api.openai.com/v1/chat/completions' : 'https://openrouter.ai/api/v1/chat/completions';
+  const headers = { 'Authorization': 'Bearer ' + key };
+  if (p === 'openrouter') { headers['X-Title'] = 'Meal Planner'; if (/^https?:/.test(location.origin)) headers['HTTP-Referer'] = location.origin; }
+  const content = photo
+    ? [{ type: 'text', text: userText }, { type: 'image_url', image_url: { url: 'data:' + photo.mime + ';base64,' + photo.data } }]
+    : userText;
+  const body = {
+    model: model,
+    messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: content }],
+    response_format: { type: 'json_schema', json_schema: { name: 'result', strict: true, schema: toJsonSchema(schema) } }
+  };
+  if (p === 'openai' && /^(gpt-5|gpt-6|o\d)/.test(model)) body.reasoning_effort = 'low'; // faster and cheaper; plenty for recipes
+  if (p === 'openrouter') body.provider = { require_parameters: true }; // only route to models that support structured output
+
+  let data;
+  try { data = await postJSON(p, url, headers, body); }
+  catch(e) {
+    // Some OpenRouter models can't do strict schemas. Retry with plain JSON mode and the schema in the prompt.
+    if (p !== 'openrouter' || !(e.status === 404 || e.status === 400)) throw e;
+    delete body.provider;
+    body.response_format = { type: 'json_object' };
+    body.messages[0].content = systemPrompt + '\n\nRespond with ONLY a JSON object matching this JSON Schema:\n' + JSON.stringify(toJsonSchema(schema));
+    try { data = await postJSON(p, url, headers, body); }
+    catch(e2) { if (e2.status === 404) throw new Error('No model on OpenRouter can handle this right now' + (photo ? ' with a photo. Try removing the photo, or' : '.') + ' try again later.'); throw e2; }
+  }
+  const choice = data.choices && data.choices[0];
+  if (!choice || !choice.message) throw new Error(extractErrMsg(data) || 'The AI returned no answer. Try again.');
+  if (choice.message.refusal) throw new Error('The AI declined: ' + choice.message.refusal);
+  let text = choice.message.content;
+  if (Array.isArray(text)) text = text.map(c => c.text || '').join('');
+  try { return parseLooseJSON(text); }
+  catch(e) { throw new Error(choice.finish_reason === 'length' ? 'The answer was cut off (too long). Try fewer meals.' : 'Couldn\'t read the AI\'s answer. Try again.'); }
+}
+
+// ── Claude ──
+function claudeHeaders(key) {
+  return { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' };
+}
+async function callClaude(key, model, systemPrompt, userText, schema, photo) {
+  const content = photo
+    ? [{ type: 'image', source: { type: 'base64', media_type: photo.mime, data: photo.data } }, { type: 'text', text: userText }]
+    : userText;
+  // Asking Claude to "use a tool" with our schema guarantees JSON in exactly that shape
+  const body = {
+    model: model,
+    max_tokens: 8192,
+    system: systemPrompt,
+    messages: [{ role: 'user', content: content }],
+    tools: [{ name: 'save_result', description: 'Save the result in the required format.', input_schema: toJsonSchema(schema) }],
+    tool_choice: { type: 'tool', name: 'save_result' }
+  };
+  const data = await postJSON('claude', 'https://api.anthropic.com/v1/messages', claudeHeaders(key), body);
+  const block = (data.content || []).find(c => c.type === 'tool_use');
+  if (!block) throw new Error(data.stop_reason === 'max_tokens' ? 'The answer was cut off (too long). Try fewer meals.' : 'Couldn\'t read the AI\'s answer. Try again.');
+  return block.input;
 }
 
 // ── GENERATE ─────────────────────────────────────────────────
@@ -1072,7 +1519,7 @@ function setGenerating(on, count, msg) {
 }
 
 async function generatePlan() {
-  if (!getKey()) { showTab('settings'); toast('Add your Gemini API key first','error'); return; }
+  if (!getKey()) { showTab('settings'); toast('Set up the AI in Settings first','error'); return; }
   const mealCount = $('mealCount').value;
   const focusTags = getActiveTags();
   const cuisines  = getActiveCuisines();
@@ -1114,7 +1561,7 @@ async function generatePlan() {
   }, 4500);
 
   try {
-    const plan = await callGemini(buildFullPrompt(), [{ role:'user', parts: buildParts(userText) }], FULL_SCHEMA);
+    const plan = await callAI(buildFullPrompt(), userText, FULL_SCHEMA, true);
     if (!plan || !Array.isArray(plan.meals) || !plan.meals.length) throw new Error('Gemini returned no meals. Try again.');
     state.plan = plan;
     state.currentGenId = Date.now();
@@ -1164,7 +1611,7 @@ async function swapMeal(idx) {
   toast('Finding something else…', '');
 
   try {
-    const newMeal = await callGemini(SWAP_PROMPT, [{ role:'user', parts: buildParts(userText) }], MEAL_SCHEMA);
+    const newMeal = await callAI(SWAP_PROMPT, userText, MEAL_SCHEMA, true);
     if (meal.day) newMeal.day = meal.day; // keep the day it was assigned to
     state.plan.meals[idx] = newMeal;
     state.history.push({ title: newMeal.title, date: Date.now(), genId: state.currentGenId });
@@ -1221,7 +1668,7 @@ function closeAddModal() { $('addMealModal').classList.remove('show'); }
 async function submitAddMeal() {
   const desc = $('addMealDesc').value.trim();
   closeAddModal();
-  if (!getKey()) { showTab('settings'); toast('Add your Gemini API key first','error'); return; }
+  if (!getKey()) { showTab('settings'); toast('Set up the AI in Settings first','error'); return; }
   const profile = getProfile();
   const adults = parseInt(profile.adults) || 2;
   const kids = parseInt(profile.kids) || 0;
@@ -1242,7 +1689,7 @@ async function submitAddMeal() {
   if (addCard) { addCard.parentNode.insertBefore(placeholder.firstChild, addCard); addCard.classList.add('hidden'); }
   state.busy = true;
   try {
-    const newMeal = await callGemini(SWAP_PROMPT, [{ role: 'user', parts: buildParts(userText) }], MEAL_SCHEMA);
+    const newMeal = await callAI(SWAP_PROMPT, userText, MEAL_SCHEMA, true);
     state.plan.meals.push(newMeal);
     state.history.push({ title: newMeal.title, date: Date.now(), genId: state.currentGenId });
     saveHistory();
@@ -1277,7 +1724,7 @@ async function regenShoppingList() {
 
   $('listUpdating').classList.remove('hidden');
   try {
-    const sl = await callGemini(SHOPPING_PROMPT, [{ role:'user', parts:[{ text: userText }] }], SHOPPING_SCHEMA);
+    const sl = await callAI(SHOPPING_PROMPT, userText, SHOPPING_SCHEMA, false);
     if (seq !== shopListSeq) return; // a newer update is on its way
     state.plan.shopping_list = sl;
     if (customItems.length) state.plan.shopping_list['Extra Items'] = customItems;
@@ -1554,7 +2001,7 @@ function stopMic() {
 }
 
 // ── BACKUP ───────────────────────────────────────────────────
-var BACKUP_KEYS = ['mp_family','mp_fav_titles','mp_history','mp_blacklist','mp_ratings','mp_staples','mp_plan','mp_model','mp_model_custom','mp_theme','mp_fridge'];
+var BACKUP_KEYS = ['mp_family','mp_fav_titles','mp_history','mp_blacklist','mp_ratings','mp_staples','mp_plan','mp_provider','mp_models','mp_custom_models','mp_theme','mp_fridge'];
 function exportBackup() {
   const data = {};
   BACKUP_KEYS.forEach(k => { const v = localStorage.getItem(k); if (v != null) data[k] = v; });
