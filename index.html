@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Tilly's Meal Planner</title>
-<meta name="theme-color" content="#fff6f8">
+<meta name="theme-color" content="#FFF6F8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Meal Planner">
@@ -232,7 +232,8 @@
   .title-row { display: flex; justify-content: space-between; align-items: center; margin: 22px 0 12px; gap: 10px; }
   .badge-prep { background: var(--butter-soft); color: var(--butter); }
   .badge-leftover { background: var(--lilac-soft); color: var(--lilac); }
-  .store-link { color: var(--pink); text-decoration: none; font-size: 15px; width: 34px; height: 34px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .store-link { color: var(--pink); background: none; border: none; cursor: pointer; text-decoration: none; font-size: 15px; width: 34px; height: 34px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .store-link.used { background: var(--mint-soft); }
   .store-link:hover { background: var(--pink-soft); }
   .spend-row { display: grid; grid-template-columns: 74px 1fr auto auto; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
   .spend-row:last-child { border-bottom: none; }
@@ -510,7 +511,13 @@
         <div class="tag" data-val="coles" onclick="setStore('coles')">Coles</div>
         <div class="tag" data-val="none" onclick="setStore('none')">Other</div>
       </div>
-      <p class="hint">Each item on your list links to a search at this store.</p>
+      <label style="margin-top:12px;">Item links on your list</label>
+      <div class="tag-row" id="linkModeTags">
+        <div class="tag" data-val="copy" onclick="setLinkMode('copy')">&#128203; Copy, then switch</div>
+        <div class="tag" data-val="browser" onclick="setLinkMode('browser')">&#127760; Open in browser</div>
+        <div class="tag" data-val="app" onclick="setLinkMode('app')">&#128241; Open store app</div>
+      </div>
+      <p class="hint" id="linkModeHint"></p>
       <label style="margin-top:14px;">Meal cards</label>
       <div class="tag-row">
         <div class="tag" id="nutritionTag" onclick="toggleNutrition()">&#128293; Show nutrition</div>
@@ -1429,13 +1436,54 @@ var STORES = {
   woolworths: { name: 'Woolworths', url: q => 'https://www.woolworths.com.au/shop/search/products?searchTerm=' + encodeURIComponent(q) },
   coles:      { name: 'Coles',      url: q => 'https://www.coles.com.au/search/products?q=' + encodeURIComponent(q) }
 };
-function getWeek() { return Object.assign({ busy: [], store: 'woolworths', nutrition: false }, readJSON('mp_week', {})); }
+function getWeek() { return Object.assign({ busy: [], store: 'woolworths', nutrition: false, linkMode: 'copy' }, readJSON('mp_week', {})); }
+
+// ── STORE LINKS ──────────────────────────────────────────────
+// Opening the store app from a link starts a fresh copy of it, and pressing Back closes that copy,
+// so the store app may ask you to log in again. "Copy, then switch" and "Open in browser" avoid that.
+var LINK_MODE_HINTS = {
+  copy: 'Tapping an item copies its name. Switch to the store app with your phone\'s recent-apps button and paste it into search. You stay logged in.',
+  browser: 'Opens the store\'s website in your browser, where you stay logged in. Log in on their website once first.',
+  app: 'Opens the store app. Use the recent-apps button to come back, not Back, or the store app may ask you to log in again.'
+};
+function setLinkMode(m) {
+  const w = getWeek(); w.linkMode = m; saveWeek(w);
+  renderWeekSettings(); updateStoreLabels();
+  if (state.plan) renderShoppingList();
+}
+var IS_ANDROID = /Android/i.test(navigator.userAgent);
+// On Android, ask Chrome itself to open the page so the store app doesn't take over the link
+function browserUrl(url) {
+  if (!IS_ANDROID) return url;
+  const u = url.replace(/^https:\/\//, '');
+  return 'intent://' + u + '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' + encodeURIComponent(url) + ';end';
+}
+function storeItemHTML(store, name) {
+  const mode = getWeek().linkMode;
+  if (mode === 'copy') {
+    return '<button class="store-link" data-name="' + escH(name) + '" onclick="copyForStore(this)" aria-label="Copy for ' + store.name + ' search">&#128203;</button>';
+  }
+  const href = mode === 'browser' ? browserUrl(store.url(name)) : store.url(name);
+  return '<a class="store-link" href="' + escH(href) + '" target="_blank" rel="noopener" aria-label="Find at ' + store.name + '">&#8599;</a>';
+}
+function copyForStore(btn) {
+  const name = btn.dataset.name;
+  const st = STORES[getWeek().store];
+  const done = () => {
+    btn.classList.add('used');
+    toast('Copied "' + name + '". Switch to ' + (st ? st.name : 'the store') + ' and paste into search', 'success');
+  };
+  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(name).then(done).catch(() => fallbackCopy(name, done));
+  else fallbackCopy(name, done);
+}
 function saveWeek(w) { localStorage.setItem('mp_week', JSON.stringify(w)); }
 function renderWeekSettings() {
   const w = getWeek();
   $('busyDays').innerHTML = DAYS.map(d => '<div class="tag' + (w.busy.indexOf(d) >= 0 ? ' active' : '') + '" onclick="toggleBusy(\'' + d + '\')">' + d + '</div>').join('');
   document.querySelectorAll('#storeTags .tag').forEach(t => t.classList.toggle('active', t.dataset.val === w.store));
   $('nutritionTag').classList.toggle('active', !!w.nutrition);
+  document.querySelectorAll('#linkModeTags .tag').forEach(t => t.classList.toggle('active', t.dataset.val === w.linkMode));
+  $('linkModeHint').textContent = LINK_MODE_HINTS[w.linkMode] || '';
 }
 function toggleBusy(d) {
   const w = getWeek(); const i = w.busy.indexOf(d);
@@ -1455,7 +1503,10 @@ function toggleNutrition() {
 function updateStoreLabels() {
   const st = STORES[getWeek().store];
   $('shopTitle').textContent = st ? st.name + ' list' : 'Shopping list';
-  $('storeHint').textContent = st ? 'Tap \u2197 next to an item to find it at ' + st.name + '.' : '';
+  const mode = getWeek().linkMode;
+  $('storeHint').textContent = !st ? '' : mode === 'copy'
+    ? 'Tap \uD83D\uDCCB to copy an item, then switch to ' + st.name + ' with the recent-apps button and paste into search.'
+    : 'Tap \u2197 next to an item to find it at ' + st.name + (mode === 'app' ? '. Come back with the recent-apps button, not Back.' : '.');
   $('storeHint').classList.toggle('hidden', !st);
 }
 
@@ -2252,7 +2303,7 @@ function renderShoppingList() {
         + '<label for="' + escH(key) + '">' + escH(name) + '</label>'
         + (qty ? '<span class="qty">' + escH(qty) + '</span>' : '')
         + (cost > 0 ? '<span class="item-cost">$' + cost.toFixed(2) + '</span>' : '')
-        + (store ? '<a class="store-link" href="' + escH(store.url(name)) + '" target="_blank" rel="noopener" aria-label="Find at ' + store.name + '">&#8599;</a>' : '')
+        + (store ? storeItemHTML(store, name) : '')
         + (cat === 'Extra Items' ? '<button class="x-btn" onclick="removeExtraItem(' + itemIdx + ')" aria-label="Remove">&#10005;</button>' : '')
         + '</div>';
     }).join('');
@@ -2576,12 +2627,6 @@ zone.addEventListener('drop', e => {
     handlePhoto($('photoInput'));
   }
 });
-</script>
-<script>
-// Registers the service worker so the app can be installed (GitHub Pages, any HTTPS host, or localhost).
-if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname))) {
-  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
-}
 </script>
 </body>
 </html>
