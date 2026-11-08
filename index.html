@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Tilly's Meal Planner</title>
-<meta name="theme-color" content="#FFF6F8">
+<meta name="theme-color" content="#fff6f8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Meal Planner">
@@ -2173,6 +2173,12 @@ zone.addEventListener('drop', e => {
     handlePhoto($('photoInput'));
   }
 });
+</script>
+<script>
+// Registers the service worker so the app can be installed (GitHub Pages, any HTTPS host, or localhost).
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname))) {
+  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+}
 </script>
 </body>
 </html>
