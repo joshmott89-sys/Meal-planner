@@ -27,8 +27,8 @@
   :root, [data-theme="light"] {
     --bg: #FFF6F8; --surface: #FFFFFF; --surface2: #FDF0F4;
     --border: #F3D9E2; --border-strong: #EBC2D1;
-    --text: #3E2A33; --muted: #8A6B78;
-    --pink: #C2557A; --pink-fill: #F5B3C8; --pink-fill-hover: #F09DB8; --on-pink: #4E1F33; --pink-soft: #FCE4EC;
+    --text: #3E2A33; --muted: #7D5F6C;
+    --pink: #AD4569; --pink-fill: #F5B3C8; --pink-fill-hover: #F09DB8; --on-pink: #4E1F33; --pink-soft: #FCE4EC;
     --mint: #2E7D5B; --mint-soft: #E3F5EC; --mint-border: #BFE8D3;
     --butter: #94680F; --butter-soft: #FFF3D6; --butter-border: #F6DFA4;
     --coral: #B4533F; --coral-soft: #FDE7E4; --coral-border: #F6C6BC;
@@ -36,6 +36,7 @@
     --danger: #C94A5A;
     --shadow: 0 4px 18px rgba(194,85,122,0.08);
     --skeleton: #F8E4EB; --skeleton-hi: #FDF3F6;
+    --star: #E9A93A; --warn-fill: #E8B04A;
     color-scheme: light;
   }
   [data-theme="dark"] {
@@ -50,6 +51,7 @@
     --danger: #F59AA6;
     --shadow: none;
     --skeleton: #33262C; --skeleton-hi: #3E2E35;
+    --star: #F2C66D; --warn-fill: #E3B65A;
     color-scheme: dark;
   }
 
@@ -62,6 +64,7 @@
 
   /* ── HEADER ─────────────────────────────────────────────── */
   .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; padding-top: 4px; }
+  .header h1 .mark { width: 0.82em; height: 0.82em; vertical-align: -0.06em; margin-right: 0.18em; }
   .header h1 { font-family: 'Fraunces', Georgia, serif; font-weight: 600; font-size: clamp(1.6rem, 7vw, 2rem); color: var(--pink); letter-spacing: -0.3px; line-height: 1.1; }
   .header p { color: var(--muted); font-size: 12px; margin-top: 2px; }
   .icon-btn { background: var(--surface); border: 1px solid var(--border); color: var(--muted); border-radius: 999px; width: 42px; height: 42px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; flex-shrink: 0; font-size: 17px; }
@@ -105,7 +108,9 @@
   .upload-zone { border: 2px dashed var(--border-strong); border-radius: 16px; padding: 24px 18px; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; position: relative; background: var(--surface2); }
   .upload-zone:hover, .upload-zone.drag { border-color: var(--pink); background: var(--pink-soft); }
   .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-  .upload-zone .icon { font-size: 1.8rem; margin-bottom: 6px; }
+  .upload-zone .icon { color: var(--pink); margin-bottom: 6px; }
+  .upload-zone .icon .ico { width: 28px; height: 28px; }
+  .upload-zone:focus-within { border-color: var(--pink); box-shadow: 0 0 0 3px var(--pink-soft); }
   .upload-zone p { color: var(--muted); font-size: 13px; }
   .upload-zone .preview { max-width: 100%; border-radius: 12px; margin-top: 4px; max-height: 180px; object-fit: cover; }
 
@@ -133,14 +138,15 @@
   .meal-title a:hover { color: var(--pink); }
   .card-actions { display: flex; gap: 6px; position: relative; }
   .fav-btn.active { color: var(--pink); border-color: var(--pink); background: var(--pink-soft); }
-  .card-menu { position: absolute; right: 0; top: 48px; z-index: 20; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 16px; padding: 6px; min-width: 220px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
+  .fav-btn.active svg { fill: currentColor; }
+  .card-menu { position: absolute; right: 0; top: 48px; z-index: 20; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 16px; padding: 6px; min-width: 250px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
   .card-menu button { display: flex; align-items: center; gap: 10px; width: 100%; background: transparent; border: none; color: var(--text); font-family: inherit; font-size: 14px; padding: 12px; border-radius: 10px; cursor: pointer; text-align: left; }
   .card-menu button:hover { background: var(--surface2); }
   .card-menu button.danger { color: var(--danger); }
 
   .day-selector { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
   .day-selector::-webkit-scrollbar { display: none; }
-  .day-pill { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); border-radius: 999px; padding: 0 4px; height: 36px; min-width: 38px; flex: 1; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+  .day-pill { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); border-radius: 999px; padding: 0 4px; height: 40px; min-width: 38px; flex: 1; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
   .day-pill.active { background: var(--pink-soft); color: var(--pink); border-color: var(--border-strong); }
 
   .meal-desc { color: var(--muted); font-size: 14px; margin: 0 0 12px; line-height: 1.5; }
@@ -165,14 +171,19 @@
   .ing-key .k-have::before { background: var(--mint); } .ing-key .k-pantry::before { background: var(--butter); } .ing-key .k-need::before { background: var(--coral); }
 
   .fridge-accordion { margin-top: 12px; border: 1px solid var(--mint-border); border-radius: 12px; overflow: hidden; }
+  .fridge-accordion-header .lead { display: inline-flex; align-items: center; gap: 6px; }
+  .accordion-arrow { display: inline-flex; transition: transform 0.2s; }
+  .accordion-arrow .ico { width: 16px; height: 16px; }
   .fridge-accordion-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; font-size: 13px; color: var(--mint); cursor: pointer; background: var(--mint-soft); user-select: none; }
   .fridge-accordion-body { display: none; flex-wrap: wrap; gap: 5px; padding: 10px 12px; }
   .fridge-accordion-body.open { display: flex; }
 
   .rate-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 13px; color: var(--muted); }
   .stars { display: flex; }
-  .star { background: none; border: none; font-size: 22px; color: var(--border-strong); cursor: pointer; width: 34px; height: 34px; line-height: 1; }
-  .star.on { color: #F2B84B; }
+  .star { background: none; border: none; color: var(--border-strong); cursor: pointer; width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; }
+  .star svg { width: 22px; height: 22px; }
+  .star.on { color: var(--star); }
+  .star.on svg { fill: currentColor; }
 
   .skeleton { border-radius: 22px; background: var(--surface); border: 1px solid var(--border); padding: 18px; margin-bottom: 14px; }
   .sk-line { height: 12px; border-radius: 6px; margin-bottom: 10px; background: linear-gradient(90deg, var(--skeleton) 25%, var(--skeleton-hi) 50%, var(--skeleton) 75%); background-size: 200% 100%; animation: shimmer 1.3s infinite; }
@@ -195,12 +206,14 @@
   .qty { font-size: 12px; color: var(--muted); background: var(--surface2); border: 1px solid var(--border); border-radius: 999px; padding: 2px 9px; white-space: nowrap; }
   .item-cost { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
   .shop-item input:checked ~ .item-cost, .shop-item input:checked ~ .qty { opacity: 0.45; }
-  .x-btn { background: none; border: none; color: var(--muted); font-size: 15px; cursor: pointer; width: 32px; height: 32px; border-radius: 999px; }
+  .x-btn { background: none; border: none; color: var(--muted); font-size: 15px; cursor: pointer; width: 40px; height: 40px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .x-btn svg { width: 16px; height: 16px; }
   .x-btn:hover { color: var(--danger); background: var(--surface2); }
   .shop-cost { padding-top: 14px; border-top: 1px solid var(--border-strong); display: flex; justify-content: space-between; color: var(--pink); font-weight: 700; font-size: 16px; margin-top: 12px; }
   .list-updating { font-size: 13px; color: var(--muted); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
   .empty { text-align: center; padding: 36px 20px; color: var(--muted); }
-  .empty .big { font-size: 2.2rem; margin-bottom: 8px; }
+  .empty .big { color: var(--pink); margin-bottom: 8px; }
+  .empty .big .ico { width: 34px; height: 34px; }
   .empty h3 { font-family: 'Fraunces', Georgia, serif; color: var(--text); font-weight: 600; margin-bottom: 6px; }
 
   /* ── SETTINGS ───────────────────────────────────────────── */
@@ -211,16 +224,17 @@
 
   /* ── TONIGHT, BUDGET, SPEND ─────────────────────────────── */
   .tonight { background: var(--pink-soft); border-color: var(--border-strong); }
-  .tonight .eyebrow { font-size: 12px; font-weight: 700; color: var(--pink); letter-spacing: 0.3px; }
-  .tonight .t-title { font-family: 'Fraunces', Georgia, serif; font-weight: 600; font-size: 1.35rem; line-height: 1.25; margin: 4px 0 8px; }
+    .tonight .t-title { font-family: 'Fraunces', Georgia, serif; font-weight: 600; font-size: 1.35rem; line-height: 1.25; margin: 0 0 8px; text-wrap: balance; }
   .tonight .t-title a { color: var(--text); text-decoration: none; }
-  .tonight .t-meta { font-size: 13px; color: var(--muted); }
+  .tonight .t-meta { font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+  .tonight .t-meta .when { color: var(--pink); font-weight: 700; }
+  .tonight .t-title .ico { width: 0.8em; height: 0.8em; vertical-align: 0; margin-left: 2px; }
   .tonight .t-prep { margin-top: 12px; background: var(--surface); border-radius: 12px; padding: 10px 12px; font-size: 13px; color: var(--text); }
   .budget-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
   .budget-top strong { font-family: 'Fraunces', Georgia, serif; font-size: 1.3rem; color: var(--text); }
   .bar-track { height: 10px; border-radius: 999px; background: var(--surface2); border: 1px solid var(--border); overflow: hidden; margin: 10px 0 8px; }
   .bar-fill { height: 100%; border-radius: 999px; background: var(--mint); transition: width 0.4s; }
-  .bar-fill.warn { background: #E8B04A; }
+  .bar-fill.warn { background: var(--warn-fill); }
   .bar-fill.over { background: var(--danger); }
   .delta { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 2px 8px; }
   .delta.up { background: var(--coral-soft); color: var(--coral); }
@@ -232,8 +246,9 @@
   .title-row { display: flex; justify-content: space-between; align-items: center; margin: 22px 0 12px; gap: 10px; }
   .badge-prep { background: var(--butter-soft); color: var(--butter); }
   .badge-leftover { background: var(--lilac-soft); color: var(--lilac); }
-  .store-link { color: var(--pink); background: none; border: none; cursor: pointer; text-decoration: none; font-size: 15px; width: 34px; height: 34px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .store-link.used { background: var(--mint-soft); }
+  .store-link { color: var(--pink); background: none; border: none; cursor: pointer; text-decoration: none; font-size: 15px; width: 40px; height: 40px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .store-link.used { background: var(--mint-soft); color: var(--mint); }
+  .store-link .ico { width: 17px; height: 17px; }
   .store-link:hover { background: var(--pink-soft); }
   .spend-row { display: grid; grid-template-columns: 74px 1fr auto auto; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
   .spend-row:last-child { border-bottom: none; }
@@ -287,6 +302,23 @@
   .toast.error { color: var(--danger); border-color: var(--danger); }
   .toast.success { color: var(--mint); border-color: var(--mint-border); }
   .toast-undo { background: transparent; border: 1px solid currentColor; color: inherit; border-radius: 999px; padding: 4px 12px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  /* ── ICONS, FOCUS, BROWSER SURFACES ─────────────────────── */
+  .ico { width: 1.05em; height: 1.05em; flex-shrink: 0; vertical-align: -0.15em; }
+  .badge .ico { width: 13px; height: 13px; }
+  .card-menu .ico { width: 17px; height: 17px; color: var(--muted); }
+  .card-menu button.danger .ico { color: inherit; }
+  .icon-btn .ico { width: 18px; height: 18px; }
+  .btn-primary .mark, .t-prep .ico { width: 0.95em; height: 0.95em; vertical-align: -0.1em; margin-right: 0.3em; }
+  :focus-visible { outline: 2px solid var(--pink); outline-offset: 2px; }
+  .input:focus-visible, textarea:focus-visible, .upload-zone input:focus-visible { outline: none; }
+  .tag:focus-visible, .day-pill:focus-visible, .nav-btn:focus-visible { outline-offset: 1px; }
+  ::selection { background: var(--pink-fill); color: var(--on-pink); }
+  .input, textarea { caret-color: var(--pink); }
+  ::placeholder { color: var(--muted); opacity: 1; }
+  .meal-title, .section-title, .empty h3 { text-wrap: balance; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+  }
 </style>
 </head>
 <body>
@@ -294,7 +326,7 @@
 
   <div class="header">
     <div>
-      <h1>&#10047; Meal Planner</h1>
+      <h1><svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><g fill="currentColor"><circle cx="12" cy="5.6" r="3.9"/><circle cx="18.1" cy="10" r="3.9"/><circle cx="15.8" cy="17.2" r="3.9"/><circle cx="8.2" cy="17.2" r="3.9"/><circle cx="5.9" cy="10" r="3.9"/></g><circle cx="12" cy="12" r="2.6" fill="var(--bg)"/></svg>Meal Planner</h1>
       <p><span id="poweredBy">Powered by AI</span> &middot; RecipeTin Eats inspired</p>
     </div>
     <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" aria-label="Switch theme"></button>
@@ -318,7 +350,7 @@
         <div class="section-label">What's in the fridge?</div>
         <div class="upload-zone" id="uploadZone">
           <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="handlePhoto(this)">
-          <div id="uploadPlaceholder"><div class="icon">&#128248;</div><p>Snap the fridge (optional)</p></div>
+          <div id="uploadPlaceholder"><div class="icon"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div><p>Snap the fridge (optional)</p></div>
           <img id="photoPreview" class="preview hidden" alt="Fridge photo">
         </div>
         <button class="btn hidden" id="removePhotoBtn" style="margin-top:10px;width:100%;" onclick="removePhoto()">Remove photo</button>
@@ -339,7 +371,7 @@
             <div class="section-label" style="margin:0;">This week</div>
             <div class="hint" style="margin-top:2px;" id="adjustSummary">5 dinners &middot; Standard</div>
           </div>
-          <button class="btn" id="adjustToggle" style="min-height:34px;padding:6px 12px;">Adjust</button>
+          <button class="btn" id="adjustToggle" aria-expanded="false" aria-controls="adjustPanel" style="min-height:40px;padding:6px 14px;">Adjust</button>
         </div>
         <div id="adjustPanel" class="hidden stack" style="margin-top:14px;">
           <div>
@@ -351,55 +383,55 @@
             <label>Cook once, eat twice</label>
             <div class="tag-row" id="leftoverTags">
               <div class="tag active" data-val="0" onclick="pickOne(this)">None</div>
-              <div class="tag" data-val="1" onclick="pickOne(this)">&#127857; 1 meal</div>
-              <div class="tag" data-val="2" onclick="pickOne(this)">&#127857; 2 meals</div>
+              <div class="tag" data-val="1" onclick="pickOne(this)">1 meal</div>
+              <div class="tag" data-val="2" onclick="pickOne(this)">2 meals</div>
             </div>
             <p class="hint">Makes extra for lunches or a night off cooking.</p>
           </div>
           <div>
             <label>Focus goals</label>
             <div class="tag-row" id="focusTags">
-              <div class="tag" data-val="High Protein" onclick="toggleTag(this)">&#128170; High protein</div>
-              <div class="tag" data-val="High Iron" onclick="toggleTag(this)">&#129388; High iron</div>
-              <div class="tag" data-val="Hidden Veggies" onclick="toggleTag(this)">&#129382; Hidden veggies</div>
-              <div class="tag" data-val="Low Carb" onclick="toggleTag(this)">&#127807; Low carb</div>
-              <div class="tag" data-val="Budget Friendly" onclick="toggleTag(this)">&#128176; Budget friendly</div>
+              <div class="tag" data-val="High Protein" onclick="toggleTag(this)">High protein</div>
+              <div class="tag" data-val="High Iron" onclick="toggleTag(this)">High iron</div>
+              <div class="tag" data-val="Hidden Veggies" onclick="toggleTag(this)">Hidden veggies</div>
+              <div class="tag" data-val="Low Carb" onclick="toggleTag(this)">Low carb</div>
+              <div class="tag" data-val="Budget Friendly" onclick="toggleTag(this)">Budget friendly</div>
             </div>
           </div>
           <div>
             <label>Vibe and effort</label>
             <div class="tag-row" id="vibeTags">
-              <div class="tag active" data-val="Standard family dinners, approachable, classic RecipeTin Eats" onclick="pickOne(this)">&#127869; Standard</div>
-              <div class="tag" data-val="Quick, easy, low effort, minimal prep, under 30 minutes" onclick="pickOne(this)">&#9889; Quick and easy</div>
-              <div class="tag" data-val="Adventurous, bold flavors, something new and exciting" onclick="pickOne(this)">&#127775; Something new</div>
-              <div class="tag" data-val="Impressive, complex, restaurant quality weekend cooking" onclick="pickOne(this)">&#11088; Challenge me</div>
+              <div class="tag active" data-val="Standard family dinners, approachable, classic RecipeTin Eats" onclick="pickOne(this)">Standard</div>
+              <div class="tag" data-val="Quick, easy, low effort, minimal prep, under 30 minutes" onclick="pickOne(this)">Quick and easy</div>
+              <div class="tag" data-val="Adventurous, bold flavors, something new and exciting" onclick="pickOne(this)">Something new</div>
+              <div class="tag" data-val="Impressive, complex, restaurant quality weekend cooking" onclick="pickOne(this)">Challenge me</div>
             </div>
           </div>
           <div>
-            <label>Cuisines <span style="font-size:11px;">(pick any)</span></label>
+            <label>Cuisines <span style="font-size:12px;">(pick any)</span></label>
             <div class="tag-row" id="cuisineTags">
-              <div class="tag" data-val="Asian" onclick="toggleTag(this)">&#x1F35C; Asian</div>
-              <div class="tag" data-val="Italian" onclick="toggleTag(this)">&#x1F35D; Italian</div>
-              <div class="tag" data-val="Mexican" onclick="toggleTag(this)">&#x1F32E; Mexican</div>
-              <div class="tag" data-val="Mediterranean" onclick="toggleTag(this)">&#x1F96B; Mediterranean</div>
-              <div class="tag" data-val="Middle Eastern" onclick="toggleTag(this)">&#x1F9C6; Middle Eastern</div>
-              <div class="tag" data-val="Thai" onclick="toggleTag(this)">&#x1F372; Thai</div>
-              <div class="tag" data-val="Indian" onclick="toggleTag(this)">&#x1F35B; Indian</div>
-              <div class="tag" data-val="Classic Australian" onclick="toggleTag(this)">&#x1F969; Classic Aussie</div>
+              <div class="tag" data-val="Asian" onclick="toggleTag(this)">Asian</div>
+              <div class="tag" data-val="Italian" onclick="toggleTag(this)">Italian</div>
+              <div class="tag" data-val="Mexican" onclick="toggleTag(this)">Mexican</div>
+              <div class="tag" data-val="Mediterranean" onclick="toggleTag(this)">Mediterranean</div>
+              <div class="tag" data-val="Middle Eastern" onclick="toggleTag(this)">Middle Eastern</div>
+              <div class="tag" data-val="Thai" onclick="toggleTag(this)">Thai</div>
+              <div class="tag" data-val="Indian" onclick="toggleTag(this)">Indian</div>
+              <div class="tag" data-val="Classic Australian" onclick="toggleTag(this)">Classic Aussie</div>
             </div>
           </div>
           <p class="hint" style="margin:0;">Your choices are remembered for next week.</p>
         </div>
       </div>
 
-      <button class="btn-primary" id="generateBtn" onclick="confirmGenerate()">&#10047; Plan my week</button>
+      <button class="btn-primary" id="generateBtn" onclick="confirmGenerate()">Plan my week</button>
     </div>
     <div class="error-box hidden" id="errorBox"></div>
 
     <div id="results" class="hidden">
       <div class="title-row">
         <h2 class="section-title" style="margin:0;">This week's menu</h2>
-        <button class="btn" style="min-height:36px;padding:6px 12px;" onclick="exportCalendar()">&#128197; Calendar</button>
+        <button class="btn" style="min-height:36px;padding:6px 12px;" onclick="exportCalendar()"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="3"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendar</button>
       </div>
       <div class="gen-status hidden" id="genStatus"><span class="spinner"></span><span id="genMsg">Planning your week&hellip;</span></div>
       <div class="card fav-summary hidden" id="favSummaryWrapper">
@@ -417,16 +449,16 @@
   <section class="tab-panel hidden" id="tab-shop">
     <h2 class="section-title" style="margin-top:4px;" id="shopTitle">Woolworths list</h2>
     <div id="shopEmpty" class="card empty">
-      <div class="big">&#128722;</div>
+      <div class="big"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></div>
       <h3>Your list will appear here</h3>
       <p>Plan your week and the shopping list builds itself.</p>
       <button class="btn btn-pink" style="margin-top:14px;" onclick="showTab('plan')">Plan my week</button>
     </div>
     <div id="shopContent" class="hidden">
       <div class="shop-tools">
-        <button class="btn btn-pink" onclick="shareShoppingList()">&#128228; Share</button>
-        <button class="btn" onclick="copyShoppingList()">&#128203; Copy</button>
-        <button class="btn" onclick="clearTicks()">&#8634; Untick</button>
+        <button class="btn btn-pink" onclick="shareShoppingList()"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>Share</button>
+        <button class="btn" onclick="copyShoppingList()"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
+        <button class="btn" onclick="clearTicks()"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>Untick</button>
       </div>
       <p class="hint" id="storeHint" style="margin:-4px 0 12px;"></p>
       <div class="list-updating hidden" id="listUpdating"><span class="spinner"></span> Updating shopping list&hellip;</div>
@@ -442,7 +474,7 @@
         <div id="spendHistory"></div>
       </div>
 
-      <button class="btn" style="width:100%;" id="downloadBtn" onclick="downloadHTML()">&#8595; Download printable plan</button>
+      <button class="btn" style="width:100%;" id="downloadBtn" onclick="downloadHTML()"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download printable plan</button>
     </div>
   </section>
 
@@ -475,15 +507,15 @@
       <div class="cost-box" id="costEstimate"></div>
       <p class="hint" id="modelStatus"></p>
 
-      <button class="btn" style="width:100%;margin-top:14px;" onclick="openShareSetup()">&#128279; Share setup with family</button>
+      <button class="btn" style="width:100%;margin-top:14px;" onclick="openShareSetup()"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Share setup with family</button>
     </div>
 
     <div class="card">
       <div class="section-label">Appearance</div>
       <div class="theme-switch" id="themeSwitch">
-        <div class="tag" data-theme-opt="light" onclick="setThemePref('light')">&#9728;&#65039; Light</div>
-        <div class="tag" data-theme-opt="dark" onclick="setThemePref('dark')">&#127769; Dark</div>
-        <div class="tag" data-theme-opt="system" onclick="setThemePref('system')">&#128241; Auto</div>
+        <div class="tag" data-theme-opt="light" onclick="setThemePref('light')">Light</div>
+        <div class="tag" data-theme-opt="dark" onclick="setThemePref('dark')">Dark</div>
+        <div class="tag" data-theme-opt="system" onclick="setThemePref('system')">Auto</div>
       </div>
     </div>
 
@@ -513,14 +545,14 @@
       </div>
       <label style="margin-top:12px;">Item links on your list</label>
       <div class="tag-row" id="linkModeTags">
-        <div class="tag" data-val="copy" onclick="setLinkMode('copy')">&#128203; Copy, then switch</div>
-        <div class="tag" data-val="browser" onclick="setLinkMode('browser')">&#127760; Open in browser</div>
-        <div class="tag" data-val="app" onclick="setLinkMode('app')">&#128241; Open store app</div>
+        <div class="tag" data-val="copy" onclick="setLinkMode('copy')">Copy, then switch</div>
+        <div class="tag" data-val="browser" onclick="setLinkMode('browser')">Open in browser</div>
+        <div class="tag" data-val="app" onclick="setLinkMode('app')">Open store app</div>
       </div>
       <p class="hint" id="linkModeHint"></p>
       <label style="margin-top:14px;">Meal cards</label>
       <div class="tag-row">
-        <div class="tag" id="nutritionTag" onclick="toggleNutrition()">&#128293; Show nutrition</div>
+        <div class="tag" id="nutritionTag" onclick="toggleNutrition()">Show nutrition</div>
       </div>
     </div>
 
@@ -540,8 +572,8 @@
       <div class="section-label">Backup</div>
       <p class="hint" style="margin:0 0 12px;">Everything is stored in this browser only. Save a backup to move to a new phone or keep it safe. Your API key isn't included.</p>
       <div class="row">
-        <button class="btn btn-pink" style="flex:1;" onclick="exportBackup()">&#8595; Save backup</button>
-        <button class="btn" style="flex:1;" onclick="document.getElementById('restoreInput').click()">&#8593; Restore</button>
+        <button class="btn btn-pink" style="flex:1;" onclick="exportBackup()"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Save backup</button>
+        <button class="btn" style="flex:1;" onclick="document.getElementById('restoreInput').click()"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Restore</button>
       </div>
       <input type="file" id="restoreInput" accept="application/json,.json" class="hidden" onchange="importBackup(this)">
     </div>
@@ -586,7 +618,7 @@
 
 <div class="modal-overlay" id="shareSetupModal">
   <div class="modal">
-    <h3>&#128279; Share your setup</h3>
+    <h3>Share your setup</h3>
     <p>Send this link to family so they can start planning without making their own key.</p>
     <div class="warn-box">Anyone with this link can use your key, and you pay for what they use. Only send it to people you trust. You can cancel the key at any time on <span id="shareProviderName">the provider's</span> website.</div>
     <div class="modal-btns" style="margin-top:14px;">
@@ -598,7 +630,7 @@
 
 <div class="modal-overlay" id="importSetupModal">
   <div class="modal">
-    <h3>&#10047; Use this setup?</h3>
+    <h3>Use this setup?</h3>
     <p id="importSetupText">Someone shared their AI setup with you.</p>
     <div class="modal-btns">
       <button class="btn" onclick="declineImportSetup()">No thanks</button>
@@ -609,8 +641,8 @@
 
 <div class="modal-overlay" id="addMealModal">
   <div class="modal">
-    <h3>&#10047; Add a meal</h3>
-    <p>Describe what you're after and Gemini will find a matching RecipeTin Eats recipe.</p>
+    <h3>Add a meal</h3>
+    <p>Describe what you're after and the AI will find a matching RecipeTin Eats recipe.</p>
     <textarea id="addMealDesc" placeholder="Asian noodles for a cold night, something with the leftover chicken&hellip;" rows="3" style="margin-bottom:14px;"></textarea>
     <div class="modal-btns">
       <button class="btn" onclick="closeAddModal()">Cancel</button>
@@ -621,6 +653,27 @@
 
 <script>
 // ── STATE ────────────────────────────────────────────────────
+// Line icons, one stroke family (matches the bottom nav)
+var ICO = {
+  external: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>',
+  bell: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
+  tag: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
+  undo: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>',
+  snow: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="2" x2="12" y2="22"/><line x1="3.34" y1="7" x2="20.66" y2="17"/><line x1="3.34" y1="17" x2="20.66" y2="7"/></svg>',
+  chevron: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>',
+  dollar: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+  star: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+  heart: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
+  more: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>',
+  swap: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>',
+  ban: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>',
+  trash: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+  box: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>',
+  zap: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+  clock: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+  x: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  copy: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>'
+};
 var state = {
   plan: null,
   photoB64: null,
@@ -1100,7 +1153,7 @@ function renderSetup() {
   }).join('');
   $('providerSteps').innerHTML = cfg.steps.map(s => '<li>' + s[0] + (s[1] ? '<span class="note">' + escH(s[1]) + '</span>' : '') + '</li>').join('');
   $('providerLink').href = cfg.keyUrl;
-  $('providerLink').textContent = cfg.linkText + ' ↗';
+  $('providerLink').innerHTML = escH(cfg.linkText) + ' ' + ICO.external;
   $('apiKey').value = getKey(p);
   $('apiKey').placeholder = 'Paste your key (starts with ' + cfg.keyPrefix + ')';
   setKeyStatus(getKey(p) ? 'Key saved.' : '', getKey(p) ? 'ok' : '');
@@ -1389,6 +1442,7 @@ function getLeftoverMeals() {
 function toggleAdjust() {
   const hidden = $('adjustPanel').classList.toggle('hidden');
   $('adjustToggle').textContent = hidden ? 'Adjust' : 'Done';
+  $('adjustToggle').setAttribute('aria-expanded', hidden ? 'false' : 'true');
 }
 function tagLabel(sel) { const a = document.querySelector(sel + ' .tag.active'); return a ? a.textContent.replace(/^[^A-Za-z]+/, '').trim() : ''; }
 function updateAdjustSummary() {
@@ -1461,10 +1515,10 @@ function browserUrl(url) {
 function storeItemHTML(store, name) {
   const mode = getWeek().linkMode;
   if (mode === 'copy') {
-    return '<button class="store-link" data-name="' + escH(name) + '" onclick="copyForStore(this)" aria-label="Copy for ' + store.name + ' search">&#128203;</button>';
+    return '<button class="store-link" data-name="' + escH(name) + '" onclick="copyForStore(this)" aria-label="Copy for ' + store.name + ' search">' + ICO.copy + '</button>';
   }
   const href = mode === 'browser' ? browserUrl(store.url(name)) : store.url(name);
-  return '<a class="store-link" href="' + escH(href) + '" target="_blank" rel="noopener" aria-label="Find at ' + store.name + '">&#8599;</a>';
+  return '<a class="store-link" href="' + escH(href) + '" target="_blank" rel="noopener" aria-label="Find at ' + store.name + '">' + ICO.external + '</a>';
 }
 function copyForStore(btn) {
   const name = btn.dataset.name;
@@ -1505,7 +1559,7 @@ function updateStoreLabels() {
   $('shopTitle').textContent = st ? st.name + ' list' : 'Shopping list';
   const mode = getWeek().linkMode;
   $('storeHint').textContent = !st ? '' : mode === 'copy'
-    ? 'Tap \uD83D\uDCCB to copy an item, then switch to ' + st.name + ' with the recent-apps button and paste into search.'
+    ? 'Tap the copy button to copy an item, then switch to ' + st.name + ' with the recent-apps button and paste into search.'
     : 'Tap \u2197 next to an item to find it at ' + st.name + (mode === 'app' ? '. Come back with the recent-apps button, not Back.' : '.');
   $('storeHint').classList.toggle('hidden', !st);
 }
@@ -1567,23 +1621,23 @@ function renderTonight() {
   const tonight = find(0), tomorrow = find(1), yesterday = find(-1);
   let h = '';
   if (state.currentGenId && Date.now() - state.currentGenId > 7 * 24 * 60 * 60 * 1000) {
-    h = '<div class="eyebrow">NEW WEEK</div><div class="t-title">Time to plan this week</div>'
+    h = '<div class="t-title">Time to plan this week</div>'
       + '<div class="t-meta">Your last plan is over a week old.</div>'
-      + '<button class="btn-primary" style="margin:12px 0 0;" onclick="openPlanForm()">\u273F Plan this week</button>';
+      + '<button class="btn-primary" style="margin:12px 0 0;" onclick="openPlanForm()">Plan this week</button>';
     el.innerHTML = h; el.classList.remove('hidden'); return;
   }
-  h += '<div class="eyebrow">TONIGHT \u00B7 ' + t.toUpperCase() + '</div>';
+  const when = '<span class="when">Tonight</span>';
   if (tonight) {
-    h += '<div class="t-title"><a href="' + escH(getRecipeUrl(tonight)) + '" target="_blank" rel="noopener">' + escH(tonight.title) + ' \u2197</a></div>'
-      + '<div class="t-meta">' + [tonight.prep_time && '\u23F1 ' + escH(tonight.prep_time), tonight.difficulty && escH(tonight.difficulty), tonight.makes_leftovers && '\uD83C\uDF71 Makes leftovers'].filter(Boolean).join(' \u00B7 ') + '</div>';
+    h += '<div class="t-title"><a href="' + escH(getRecipeUrl(tonight)) + '" target="_blank" rel="noopener">' + escH(tonight.title) + ' ' + ICO.external + '</a></div>'
+      + '<div class="t-meta">' + [when, tonight.prep_time && escH(tonight.prep_time), tonight.difficulty && escH(tonight.difficulty), tonight.makes_leftovers && 'Makes leftovers'].filter(Boolean).join(' \u00B7 ') + '</div>';
   } else if (yesterday && yesterday.makes_leftovers) {
-    h += '<div class="t-title">Leftovers night \uD83C\uDF71</div><div class="t-meta">Enjoy the rest of ' + escH(yesterday.title) + '.</div>';
+    h += '<div class="t-title">Leftovers night</div><div class="t-meta">' + when + ' \u00B7 Enjoy the rest of ' + escH(yesterday.title) + '.</div>';
   } else {
     let next = null;
     for (let o = 1; o < 7 && !next; o++) next = find(o);
-    h += '<div class="t-title">Nothing planned</div><div class="t-meta">' + (next ? 'Next up: ' + next.day + ', ' + escH(next.title) + '.' : 'Use up leftovers or keep it simple.') + '</div>';
+    h += '<div class="t-title">Nothing planned</div><div class="t-meta">' + when + ' \u00B7 ' + (next ? 'Next up: ' + next.day + ', ' + escH(next.title) + '.' : 'Use up leftovers or keep it simple.') + '</div>';
   }
-  if (tomorrow && tomorrow.prep_ahead) h += '<div class="t-prep">\u23F0 <b>For tomorrow</b> (' + escH(tomorrow.title) + '): ' + escH(tomorrow.prep_ahead) + '</div>';
+  if (tomorrow && tomorrow.prep_ahead) h += '<div class="t-prep">' + ICO.bell + '<b>For tomorrow</b> (' + escH(tomorrow.title) + '): ' + escH(tomorrow.prep_ahead) + '</div>';
   el.innerHTML = h; el.classList.remove('hidden');
 }
 
@@ -1613,7 +1667,7 @@ function renderBudget() {
     h += '<div class="budget-top" style="margin-top:6px;"><strong>\u2248 $' + est.toFixed(0) + '</strong><span class="hint" style="margin:0;">of $' + budget.toFixed(0) + ' budget</span></div>'
       + '<div class="bar-track"><div class="bar-fill' + (pct > 1 ? ' over' : pct > 0.9 ? ' warn' : '') + '" style="width:' + Math.min(100, pct * 100).toFixed(0) + '%"></div></div>'
       + '<div class="hint" style="margin:0;">' + (pct > 1 ? '<b style="color:var(--danger)">$' + (est - budget).toFixed(0) + ' over budget.</b> ' : '$' + (budget - est).toFixed(0) + ' to spare. ') + label + '</div>';
-    if (pct > 1) h += '<button class="btn btn-pink" style="width:100%;margin-top:12px;" onclick="bringUnderBudget()">\uD83D\uDCB8 Swap the priciest meal for a cheaper one</button>';
+    if (pct > 1) h += '<button class="btn btn-pink" style="width:100%;margin-top:12px;" onclick="bringUnderBudget()">' + ICO.tag + 'Swap the priciest meal for a cheaper one</button>';
   } else {
     h += '<div class="budget-top" style="margin-top:6px;"><strong>\u2248 $' + est.toFixed(0) + '</strong></div>'
       + '<div class="hint" style="margin:4px 0 0;">' + label + ' <a href="#" onclick="showTab(\'settings\');return false;">Set a weekly budget</a> to track it.</div>';
@@ -1659,7 +1713,7 @@ function renderSpendHistory() {
     return '<div class="spend-row"><span>' + lbl + '</span>'
       + '<div class="mini"><span style="width:' + Math.min(100, e.actual / max * 100).toFixed(0) + '%;' + (over ? 'background:var(--danger);' : '') + '"></span></div>'
       + '<strong>$' + e.actual.toFixed(0) + '</strong>'
-      + '<button class="x-btn" onclick="deleteSpend(' + e.genId + ')" aria-label="Delete">&#10005;</button></div>';
+      + '<button class="x-btn" onclick="deleteSpend(' + e.genId + ')" aria-label="Delete">' + ICO.x + '</button></div>';
   }).join('');
   const cal = getCalibration();
   let summary = '';
@@ -1928,7 +1982,7 @@ function setGenerating(on, count, msg) {
   state.busy = on;
   const btn = $('generateBtn');
   btn.disabled = on;
-  btn.textContent = on ? 'Planning…' : '✿ Plan my week';
+  btn.textContent = on ? 'Planning…' : 'Plan my week';
   $('genStatus').classList.toggle('hidden', !on);
   if (msg) $('genMsg').textContent = msg;
   if (on) {
@@ -2205,7 +2259,7 @@ function renderMealCards(animate) {
     const rating = state.ratings[m.title] ? state.ratings[m.title].r : 0;
 
     const isRecent = state.history.some(h => h.title === m.title && h.genId !== state.currentGenId && h.date > recentCutoff);
-    const recentBadge = isRecent ? '<span class="badge badge-recent">⏳ Had recently</span>' : '';
+    const recentBadge = isRecent ? '<span class="badge badge-recent">' + ICO.undo + 'Had recently</span>' : '';
 
     let ingHTML = '', fridgeAccordionHTML = '';
     if (m.ingredients) {
@@ -2222,8 +2276,8 @@ function renderMealCards(animate) {
       if (have.length) {
         fridgeAccordionHTML = '<div class="fridge-accordion">'
           + '<div class="fridge-accordion-header" onclick="toggleFridgeAccordion(this)">'
-          + '🧊 Uses ' + have.length + ' fridge item' + (have.length!==1?'s':'')
-          + '<span class="accordion-arrow" style="transition:transform 0.2s;">&#9660;</span></div>'
+          + '<span class="lead">' + ICO.snow + 'Uses ' + have.length + ' fridge item' + (have.length!==1?'s':'') + '</span>'
+          + '<span class="accordion-arrow">' + ICO.chevron + '</span></div>'
           + '<div class="fridge-accordion-body">' + have.map(h => '<span class="ing ing-have">' + escH(h) + '</span>').join('') + '</div>'
           + '</div>';
       }
@@ -2234,34 +2288,34 @@ function renderMealCards(animate) {
       + '</div>';
 
     let costText = '';
-    if (m.estimated_cost_aud) costText += '💵 ' + escH(m.estimated_cost_aud);
+    if (m.estimated_cost_aud) costText += escH(m.estimated_cost_aud);
     if (m.estimated_cost_per_person_aud) costText += ' (' + escH(m.estimated_cost_per_person_aud) + '/pp)';
-    const costBadge = costText ? '<span class="badge badge-cost">' + costText + '</span>' : '';
+    const costBadge = costText ? '<span class="badge badge-cost">' + ICO.dollar + costText + '</span>' : '';
 
     let stars = '';
-    for (let s = 1; s <= 5; s++) stars += '<button class="star' + (s <= rating ? ' on' : '') + '" onclick="rateMeal(' + i + ',' + s + ')" aria-label="' + s + ' star' + (s>1?'s':'') + '">★</button>';
+    for (let s = 1; s <= 5; s++) stars += '<button class="star' + (s <= rating ? ' on' : '') + '" onclick="rateMeal(' + i + ',' + s + ')" aria-label="Rate ' + s + ' star' + (s>1?'s':'') + '">' + ICO.star + '</button>';
 
     return '<div class="meal-card' + (animate ? ' animate' : '') + '" data-card="' + i + '"' + delay + '>'
       + '<div class="meal-card-body">'
       + '<div class="meal-card-top">'
       + '<div class="meal-title"><a href="' + url + '" target="_blank" rel="noopener">' + escH(m.title) + '</a></div>'
       + '<div class="card-actions">'
-      + '<button class="icon-btn fav-btn' + (isFav?' active':'') + '" data-fav="' + i + '" aria-label="Favourite" onclick="toggleFavourite(' + i + ')">♥</button>'
-      + '<button class="icon-btn" aria-label="More options" onclick="toggleMenu(event,' + i + ')">⋯</button>'
+      + '<button class="icon-btn fav-btn' + (isFav?' active':'') + '" data-fav="' + i + '" aria-label="Favourite" onclick="toggleFavourite(' + i + ')">' + ICO.heart + '</button>'
+      + '<button class="icon-btn" aria-label="More options" aria-haspopup="menu" onclick="toggleMenu(event,' + i + ')">' + ICO.more + '</button>'
       + '<div class="card-menu hidden" data-menu="' + i + '">'
-      + '<button onclick="menuAction(\'swap\',' + i + ')">🔄 Swap for something else</button>'
-      + '<button onclick="menuAction(\'cheaper\',' + i + ')">💸 Cheaper alternative</button>'
-      + '<button onclick="menuAction(\'ban\',' + i + ')">🚫 Never suggest again</button>'
-      + '<button class="danger" onclick="menuAction(\'remove\',' + i + ')">🗑 Remove from plan</button>'
+      + '<button onclick="menuAction(\'swap\',' + i + ')">' + ICO.swap + 'Swap for something else</button>'
+      + '<button onclick="menuAction(\'cheaper\',' + i + ')">' + ICO.tag + 'Cheaper alternative</button>'
+      + '<button onclick="menuAction(\'ban\',' + i + ')">' + ICO.ban + 'Never suggest again</button>'
+      + '<button class="danger" onclick="menuAction(\'remove\',' + i + ')">' + ICO.trash + 'Remove from plan</button>'
       + '</div></div></div>'
       + dayHTML
       + '<p class="meal-desc">' + escH(m.description) + '</p>'
       + '<div class="badge-row">'
       + recentBadge
-      + (m.makes_leftovers ? '<span class="badge badge-leftover">🍱 Makes leftovers</span>' : '')
-      + (m.prep_ahead ? '<span class="badge badge-prep">⏰ ' + escH(m.prep_ahead) + '</span>' : '')
-      + (showNutrition && m.macros ? '<span class="badge badge-macros">🔥 ' + escH(m.macros) + '</span>' : '')
-      + (m.prep_time ? '<span class="badge badge-time">⏱ ' + escH(m.prep_time) + '</span>' : '')
+      + (m.makes_leftovers ? '<span class="badge badge-leftover">' + ICO.box + 'Makes leftovers</span>' : '')
+      + (m.prep_ahead ? '<span class="badge badge-prep">' + ICO.bell + escH(m.prep_ahead) + '</span>' : '')
+      + (showNutrition && m.macros ? '<span class="badge badge-macros">' + ICO.zap + escH(m.macros) + '</span>' : '')
+      + (m.prep_time ? '<span class="badge badge-time">' + ICO.clock + escH(m.prep_time) + '</span>' : '')
       + (m.difficulty ? '<span class="badge ' + diffClass(m.difficulty) + '">' + escH(m.difficulty) + '</span>' : '')
       + costBadge
       + '</div>'
@@ -2277,6 +2331,7 @@ function toggleFridgeAccordion(header) {
   const body = header.nextElementSibling;
   const arrow = header.querySelector('.accordion-arrow');
   const isOpen = body.classList.toggle('open');
+  header.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
   if (arrow) arrow.style.transform = isOpen ? 'rotate(180deg)' : '';
 }
 
@@ -2304,7 +2359,7 @@ function renderShoppingList() {
         + (qty ? '<span class="qty">' + escH(qty) + '</span>' : '')
         + (cost > 0 ? '<span class="item-cost">$' + cost.toFixed(2) + '</span>' : '')
         + (store ? storeItemHTML(store, name) : '')
-        + (cat === 'Extra Items' ? '<button class="x-btn" onclick="removeExtraItem(' + itemIdx + ')" aria-label="Remove">&#10005;</button>' : '')
+        + (cat === 'Extra Items' ? '<button class="x-btn" onclick="removeExtraItem(' + itemIdx + ')" aria-label="Remove">' + ICO.x + '</button>' : '')
         + '</div>';
     }).join('');
     return '<div class="shop-section"><div class="shop-category">' + escH(cat === 'Extra Items' ? 'Extra items' : cat) + '</div>' + rows + '</div>';
@@ -2545,21 +2600,21 @@ function downloadHTML() {
   }).join('');
 
   const css = 'body{background:#FFF6F8;color:#3E2A33;font-family:Nunito,system-ui,sans-serif;max-width:560px;margin:0 auto;padding:24px 18px 60px;}'
-    + 'h1,h2,h3{font-family:Georgia,serif;color:#C2557A;}h1{font-size:2rem;margin:0 0 4px;}h2{font-size:1.4rem;margin:36px 0 12px;}'
+    + 'h1,h2,h3{font-family:Georgia,serif;color:#AD4569;}h1{font-size:2rem;margin:0 0 4px;}h2{font-size:1.4rem;margin:36px 0 12px;}'
     + 'h3{font-size:1.15rem;margin:24px 0 10px;border-bottom:1px solid #F3D9E2;padding-bottom:4px;}'
-    + '.cover{text-align:center;padding:30px 0 20px;}.cover p{color:#8A6B78;}'
+    + '.cover{text-align:center;padding:30px 0 20px;}.cover p{color:#7D5F6C;}'
     + '.meal{background:#fff;border:1px solid #F3D9E2;border-radius:18px;padding:18px;margin-bottom:12px;break-inside:avoid;overflow:hidden;}'
     + '.title{font-family:Georgia,serif;font-size:1.2rem;color:#3E2A33;text-decoration:none;display:block;margin-bottom:6px;}'
-    + '.url{display:none;font-size:10px;color:#8A6B78;word-break:break-all;}.desc{color:#8A6B78;font-size:14px;line-height:1.5;}'
+    + '.url{display:none;font-size:10px;color:#7D5F6C;word-break:break-all;}.desc{color:#7D5F6C;font-size:14px;line-height:1.5;}'
     + '.badges,.ing-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;clear:both;}'
-    + '.b{border-radius:999px;padding:3px 9px;font-size:11px;font-weight:600;}.pink{background:#FCE4EC;color:#C2557A;}.lilac{background:#EEEAFB;color:#6B5AA8;}.mint{background:#E3F5EC;color:#2E7D5B;}'
+    + '.b{border-radius:999px;padding:3px 9px;font-size:11px;font-weight:600;}.pink{background:#FCE4EC;color:#AD4569;}.lilac{background:#EEEAFB;color:#6B5AA8;}.mint{background:#E3F5EC;color:#2E7D5B;}'
     + '.ing{border-radius:7px;padding:3px 8px;font-size:11px;border:1px solid;}.have{background:#E3F5EC;color:#2E7D5B;border-color:#BFE8D3;}.pantry{background:#FFF3D6;color:#94680F;border-color:#F6DFA4;}.need{background:#FDE7E4;color:#B4533F;border-color:#F6C6BC;}'
     + '.qr{display:none;float:right;margin:0 0 8px 12px;}'
-    + '.list{background:#fff;border:1px solid #F3D9E2;border-radius:18px;padding:18px;}.cat{font-size:12px;font-weight:700;color:#C2557A;margin:14px 0 4px;}'
+    + '.list{background:#fff;border:1px solid #F3D9E2;border-radius:18px;padding:18px;}.cat{font-size:12px;font-weight:700;color:#AD4569;margin:14px 0 4px;}'
     + '.item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #F3D9E2;}.item label{flex:1;}'
-    + '.item input{accent-color:#E78AA9;width:18px;height:18px;}.item input:checked+label{text-decoration:line-through;color:#8A6B78;}'
-    + '.qty{font-size:11px;color:#8A6B78;border:1px solid #F3D9E2;border-radius:999px;padding:2px 8px;}.cost{font-size:13px;color:#8A6B78;}'
-    + '.total{display:flex;justify-content:space-between;color:#C2557A;font-weight:700;margin-top:12px;padding-top:12px;border-top:1px solid #EBC2D1;}'
+    + '.item input{accent-color:#E78AA9;width:18px;height:18px;}.item input:checked+label{text-decoration:line-through;color:#7D5F6C;}'
+    + '.qty{font-size:11px;color:#7D5F6C;border:1px solid #F3D9E2;border-radius:999px;padding:2px 8px;}.cost{font-size:13px;color:#7D5F6C;}'
+    + '.total{display:flex;justify-content:space-between;color:#AD4569;font-weight:700;margin-top:12px;padding-top:12px;border-top:1px solid #EBC2D1;}'
     + '@media print{body{background:#fff;}.cover{page-break-after:always;}.url,.qr{display:block;}.meal,.list{border-color:#ddd;}}';
 
   const html = '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n'
@@ -2590,7 +2645,7 @@ function downloadHTML() {
 // ── UI HELPERS ───────────────────────────────────────────────
 function showError(msg) {
   const el = $('errorBox');
-  el.textContent = '⚠ ' + msg;
+  el.textContent = msg;
   el.classList.remove('hidden');
   el.scrollIntoView({ behavior:'smooth', block:'nearest' });
 }
@@ -2656,6 +2711,40 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localh
     box.appendChild(go); box.appendChild(x); document.body.appendChild(box);
   }
   function hide() { if (box) box.style.display = 'none'; }
+})();
+</script>
+<script>
+// Keyboard and screen-reader support for chips and other tappable divs,
+// including ones rendered later. Keeps aria-pressed / aria-current in step with .active.
+(function () {
+  var SEL = '.tag, .add-meal-card, .fridge-accordion-header';
+  function sync(el) {
+    if (el.matches('.tag, .day-pill')) el.setAttribute('aria-pressed', el.classList.contains('active') ? 'true' : 'false');
+    else if (el.matches('.nav-btn')) { if (el.classList.contains('active')) el.setAttribute('aria-current', 'page'); else el.removeAttribute('aria-current'); }
+  }
+  function wire(el) {
+    if (!el.hasAttribute('data-a11y')) {
+      el.setAttribute('data-a11y', '');
+      if (el.matches(SEL)) { el.setAttribute('role', 'button'); el.tabIndex = 0; }
+      if (el.matches('.fridge-accordion-header')) el.setAttribute('aria-expanded', 'false');
+    }
+    sync(el);
+  }
+  var ALL = SEL + ', .day-pill, .nav-btn';
+  function scan(root) {
+    if (root.matches && root.matches(ALL)) wire(root);
+    if (root.querySelectorAll) root.querySelectorAll(ALL).forEach(wire);
+  }
+  document.addEventListener('keydown', function (e) {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches(SEL)) { e.preventDefault(); e.target.click(); }
+  });
+  new MutationObserver(function (list) {
+    list.forEach(function (m) {
+      if (m.type === 'attributes') { if (m.target.matches && m.target.matches(ALL)) sync(m.target); }
+      else m.addedNodes.forEach(function (n) { if (n.nodeType === 1) scan(n); });
+    });
+  }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+  scan(document.body);
 })();
 </script>
 </body>
