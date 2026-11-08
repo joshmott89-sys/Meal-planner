@@ -2634,5 +2634,29 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localh
   window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
 }
 </script>
+<script>
+// pixelpad-install-button: Chrome's own menu can refuse to install a second app from the same
+// address (Chrome 155+ on Android); this button still works. Shows only when Chrome can install.
+(function () {
+  if (window.matchMedia && matchMedia('(display-mode: standalone)').matches) return;
+  try { if (sessionStorage.getItem('pp-install-hide')) return; } catch (e) {}
+  var ev = null, box = null;
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); ev = e; show(); });
+  window.addEventListener('appinstalled', function () { ev = null; hide(); });
+  function show() {
+    if (box) { box.style.display = 'flex'; return; }
+    box = document.createElement('div');
+    box.style.cssText = 'position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:2147483000;display:flex;align-items:center;border-radius:26px;background:#fff6f8;color:#111111;box-shadow:0 4px 16px rgba(0,0,0,.35);font:600 15px system-ui,sans-serif';
+    var go = document.createElement('button'); go.type = 'button'; go.textContent = 'Install app';
+    go.style.cssText = 'border:0;background:none;color:inherit;font:inherit;padding:0 6px 0 18px;min-height:48px;cursor:pointer';
+    var x = document.createElement('button'); x.type = 'button'; x.textContent = '✕'; x.setAttribute('aria-label', 'Hide install button');
+    x.style.cssText = 'border:0;background:none;color:inherit;font:inherit;opacity:.75;padding:0 16px 0 8px;min-height:48px;cursor:pointer';
+    go.onclick = function () { if (!ev) return; ev.prompt(); ev.userChoice.then(function () { ev = null; hide(); }); };
+    x.onclick = function () { hide(); try { sessionStorage.setItem('pp-install-hide', '1'); } catch (e) {} };
+    box.appendChild(go); box.appendChild(x); document.body.appendChild(box);
+  }
+  function hide() { if (box) box.style.display = 'none'; }
+})();
+</script>
 </body>
 </html>
