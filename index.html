@@ -345,9 +345,12 @@
     <div class="card tonight hidden" id="tonightCard"></div>
     <div class="card hidden" id="budgetCard"></div>
 
-    <button class="btn new-week-btn hidden" id="newWeekBtn" onclick="openPlanForm()">&#43; Plan a new week</button>
+    <button class="btn new-week-btn hidden" id="newWeekBtn" onclick="openPlanForm()">&#43; Plan a new week (start fresh)</button>
 
     <div id="planForm">
+      <div class="notice hidden" id="freshNote">
+        <span>Starting fresh. Last week's fridge notes and photo have been cleared, so snap the fridge as it is now.</span>
+      </div>
       <div class="card">
         <div class="section-label">What's in the fridge?</div>
         <div class="upload-zone" id="uploadZone">
@@ -427,6 +430,7 @@
       </div>
 
       <button class="btn-primary" id="generateBtn" onclick="confirmGenerate()">Plan my week</button>
+      <button class="btn hidden" id="keepPlanBtn" style="width:100%;margin-bottom:14px;" onclick="closePlanForm()">Keep this week's plan</button>
     </div>
     <div class="error-box hidden" id="errorBox"></div>
 
@@ -436,6 +440,7 @@
         <button class="btn" style="min-height:36px;padding:6px 12px;" onclick="exportCalendar()"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="3"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendar</button>
       </div>
       <div class="gen-status hidden" id="genStatus"><span class="spinner"></span><span id="genMsg">Planning your week&hellip;</span></div>
+      <div class="card hidden" id="fridgeSeenCard"></div>
       <div class="card fav-summary hidden" id="favSummaryWrapper">
         <div style="font-size:13px;line-height:1.4;">
           <div><span style="color:var(--accent);">&#9829;</span> <strong id="favCountText">0</strong> favourites saved</div>
@@ -571,13 +576,15 @@
     </div>
 
     <div class="card">
-      <div class="section-label">Backup</div>
+      <div class="section-label">Backup and reset</div>
       <p class="hint" style="margin:0 0 12px;">Everything is stored in this browser only. Save a backup to move to a new phone or keep it safe. Your API key isn't included.</p>
       <div class="row">
         <button class="btn btn-accent" style="flex:1;" onclick="exportBackup()"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Save backup</button>
         <button class="btn" style="flex:1;" onclick="document.getElementById('restoreInput').click()"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Restore</button>
       </div>
       <input type="file" id="restoreInput" accept="application/json,.json" class="hidden" onchange="importBackup(this)">
+      <button class="btn btn-danger" style="width:100%;margin-top:10px;" onclick="clearCurrentPlan()"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Clear this week's plan</button>
+      <p class="hint">Removes the current meals, shopping list and fridge notes. Favourites, ratings, receipts and settings are kept.</p>
     </div>
   </section>
 
@@ -674,6 +681,7 @@ var ICO = {
   zap: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
   clock: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
   x: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  camera: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>',
   copy: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>'
 };
 var state = {
@@ -747,8 +755,8 @@ var SHOPPING_SCHEMA = {
 
 var FULL_SCHEMA = {
   type: 'OBJECT',
-  properties: { meals: { type: 'ARRAY', items: MEAL_SCHEMA }, shopping_list: SHOPPING_SCHEMA },
-  required: ['meals','shopping_list']
+  properties: { fridge_seen: { type: 'ARRAY', items: { type: 'STRING' } }, meals: { type: 'ARRAY', items: MEAL_SCHEMA }, shopping_list: SHOPPING_SCHEMA },
+  required: ['fridge_seen','meals','shopping_list']
 };
 
 // ── PROMPTS ──────────────────────────────────────────────────
@@ -779,7 +787,7 @@ function buildFullPrompt() {
     + cuisineLine
     + staplesLine
     + '\n'
-    + 'FRIDGE RULE — MANDATORY: Any ingredient listed in the fridge text or visible in the fridge photo MUST be used in at least one meal. Do NOT ignore fridge items. If focus goals are active, use the fridge items TO MEET those goals — never discard fridge items in favour of generic recipes.\n'
+    + 'FRIDGE — MANDATORY: The photo (if any) shows the fridge as it is RIGHT NOW. First list every food item you can identify in the photo and the fridge text in fridge_seen (an empty array if neither is provided). Never invent fridge items. Build the meals around fridge_seen: use each item in at least one meal where it makes sense. If focus goals are active, use the fridge items TO MEET those goals.\n'
     + '\n'
     + 'Recommend recipes from RecipeTin Eats by Nagi Maehashi (recipetineats.com only).\n'
     + 'Construct recipetin_search_url as: https://www.google.com/search?q=site:recipetineats.com+[hyphenated-recipe-name]\n'
@@ -788,9 +796,9 @@ function buildFullPrompt() {
     + 'For estimated_cost_aud estimate TOTAL ingredient cost for ' + pax + ' people in AUD (e.g. "~$18").\n'
     + 'For estimated_cost_per_person_aud estimate cost per person in AUD (e.g. "~$4.50").\n'
     + 'Classify every ingredient into EXACTLY ONE array:\n'
-    + '  have: items EXPLICITLY from the fridge photo or fridge text. Empty array if no fridge context provided.\n'
+    + '  have: ONLY items that appear in fridge_seen. Empty array if fridge_seen is empty.\n'
     + '  pantry: standard staples not from the fridge (oil, flour, spices, soy sauce, stock, etc.).\n'
-    + '  need: everything else to be purchased (meat, fresh produce, specific dairy, pasta, etc.).\n'
+    + '  need: EVERY other ingredient that must be bought (meat, fresh produce, dairy, pasta, etc.). List them all as plain ingredient names; most meals need several.\n'
     + 'For shopping_list items return "name", "qty" (e.g. "500g", "1 bunch", "x2"), and "cost" (estimated AUD as plain number, 0 for negligible pantry staples).\n'
     + 'SCHEDULE: Give each meal a different day in the "day" field, using exactly one of: Mon, Tue, Wed, Thu, Fri, Sat, Sun.'
     + (busy.length ? ' Busy nights are ' + busy.join(', ') + ': only put Easy meals of 30 minutes or less on those nights.' : '')
@@ -956,7 +964,7 @@ function savePlan() {
 function loadPlan() {
   const saved = readJSON('mp_plan', null);
   if (saved && saved.plan && Array.isArray(saved.plan.meals)) {
-    state.plan = saved.plan;
+    state.plan = normalizePlan(saved.plan); // also cleans junk like ",*" from older plans
     state.currentGenId = saved.genId || null;
     renderResults(false);
   }
@@ -1482,8 +1490,8 @@ function loadPrefs() {
     setActiveTags('#cuisineTags', p.cuisines || []);
     if (p.vibe && document.querySelector('#vibeTags .tag[data-val="' + p.vibe + '"]')) setActiveTags('#vibeTags', [p.vibe]);
     setActiveTags('#leftoverTags', [String(p.leftovers || 0)]);
-    $('carryCheck').checked = p.carry !== false;
-  } else $('carryCheck').checked = true;
+    $('carryCheck').checked = p.carry === true;
+  } else $('carryCheck').checked = false;
   updateAdjustSummary();
 }
 
@@ -1573,10 +1581,91 @@ function updatePlanFormVisibility() {
   const has = !!state.plan;
   $('planForm').classList.toggle('hidden', has && !planFormOpen);
   $('newWeekBtn').classList.toggle('hidden', !has || planFormOpen);
+  $('keepPlanBtn').classList.toggle('hidden', !has || !planFormOpen);
+  if (!planFormOpen) $('freshNote').classList.add('hidden');
   updateCarryRow();
 }
+function closePlanForm() {
+  planFormOpen = false;
+  hideError();
+  updatePlanFormVisibility();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function clearCurrentPlan() {
+  if (!state.plan) { toast('There\'s no plan to clear', ''); return; }
+  if (!confirm('Clear this week\'s plan and shopping list? Favourites, ratings, receipts and settings are kept.')) return;
+  state.plan = null;
+  state.currentGenId = null;
+  state.lastDelta = null;
+  state.undoMeal = null;
+  localStorage.removeItem('mp_plan');
+  Object.keys(localStorage).forEach(k => { if (k.indexOf('grocery_') === 0) localStorage.removeItem(k); });
+  clearFridgeInputs();
+  planFormOpen = false;
+  $('results').classList.add('hidden');
+  renderTonight(); renderBudget(); renderShoppingList(); updatePlanFormVisibility();
+  showTab('plan');
+  toast('Plan cleared. Ready for a fresh start', 'success');
+}
+
+// ── CLEAN-UP OF AI OUTPUT ────────────────────────────────────
+// Models sometimes return junk like ",*" or "-" for empty fields. Treat anything without
+// a letter or number as empty, so it never shows up on a card.
+function hasWord(s) { return /[A-Za-z0-9]/.test(String(s == null ? '' : s)); }
+function cleanStr(s) { s = String(s == null ? '' : s).trim(); return hasWord(s) ? s : ''; }
+function cleanList(a) { return (Array.isArray(a) ? a : []).map(x => cleanStr(typeof x === 'string' ? x : (x && x.name))).filter(Boolean); }
+function normalizeMeal(m) {
+  if (!m) return m;
+  ['title','description','macros','prep_time','difficulty','estimated_cost_aud','estimated_cost_per_person_aud','prep_ahead','day'].forEach(k => { m[k] = cleanStr(m[k]); });
+  if (!m.day) m.day = null;
+  m.ingredients = m.ingredients || {};
+  ['have','pantry','need'].forEach(k => { m.ingredients[k] = cleanList(m.ingredients[k]); });
+  m.makes_leftovers = m.makes_leftovers === true;
+  return m;
+}
+function normalizeShopping(sl) {
+  sl = sl || {};
+  Object.keys(sl).forEach(cat => { sl[cat] = (Array.isArray(sl[cat]) ? sl[cat] : []).filter(it => hasWord(itemName(it))); });
+  return sl;
+}
+function normalizePlan(plan) {
+  plan.meals = (plan.meals || []).map(normalizeMeal).filter(m => m && m.title);
+  plan.shopping_list = normalizeShopping(plan.shopping_list);
+  plan.fridge_seen = cleanList(plan.fridge_seen);
+  return plan;
+}
+// Fridge info saved with the plan, used by swaps and shopping-list refreshes
+function planFridgeContext() {
+  const p = state.plan || {};
+  if (p.fridge_seen && p.fridge_seen.length) return p.fridge_seen.join(', ');
+  return p.fridge_text || '';
+}
+function renderFridgeSeen() {
+  const el = $('fridgeSeenCard');
+  const p = state.plan;
+  if (!p || (!p.had_photo && !p.fridge_text && !(p.fridge_seen || []).length)) { el.classList.add('hidden'); return; }
+  const seen = p.fridge_seen || [];
+  let h = '<div class="section-label">' + (p.had_photo ? ICO.camera + ' Spotted in your fridge' : ICO.snow + ' From your fridge notes') + (seen.length ? ' (' + seen.length + ')' : '') + '</div>';
+  if (seen.length) {
+    h += '<div class="ing-tags">' + seen.map(x => '<span class="ing ing-have">' + escH(x) + '</span>').join('') + '</div>'
+      + '<p class="hint">Not right? Tap "Plan a new week" and try a closer, brighter photo, or type what\'s there.</p>';
+  } else {
+    h += '<p class="hint" style="margin:0;color:var(--coral);">The AI couldn\'t make out anything in your fridge. Try a closer, brighter photo, or type what\'s there.</p>';
+  }
+  el.innerHTML = h;
+  el.classList.remove('hidden');
+}
+function clearFridgeInputs() {
+  $('fridgeText').value = '';
+  saveFridge();
+  removePhoto();
+}
+// "Plan a new week" always starts from a clean fridge, so last week's notes can't leak into the new plan
 function openPlanForm() {
   planFormOpen = true;
+  clearFridgeInputs();
+  hideError();
+  $('freshNote').classList.remove('hidden');
   updatePlanFormVisibility();
   $('planForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -1988,6 +2077,9 @@ function setGenerating(on, count, msg) {
   $('genStatus').classList.toggle('hidden', !on);
   if (msg) $('genMsg').textContent = msg;
   if (on) {
+    // Hide last week's plan while the new one is made, so it's clear what's new
+    ['tonightCard','budgetCard','fridgeSeenCard','favSummaryWrapper'].forEach(id => $(id).classList.add('hidden'));
+    $('keepPlanBtn').classList.add('hidden');
     $('results').classList.remove('hidden');
     $('mealCards').innerHTML = skeletonHTML(count || 3);
     $('genStatus').scrollIntoView({ behavior:'smooth', block:'start' });
@@ -2042,6 +2134,10 @@ async function generatePlan() {
   try {
     const plan = await callAI(buildFullPrompt(), userText, FULL_SCHEMA, true);
     if (!plan || !Array.isArray(plan.meals) || !plan.meals.length) throw new Error('The AI returned no meals. Try again.');
+    normalizePlan(plan);
+    if (!plan.meals.length) throw new Error('The AI returned no usable meals. Try again.');
+    plan.fridge_text = fridgeText;
+    plan.had_photo = !!state.photoB64;
     normalizeDays(plan.meals);
     sortMealsByDay(plan.meals);
     state.plan = plan;
@@ -2055,14 +2151,16 @@ async function generatePlan() {
     savePlan();
     clearInterval(stepTimer);
     setGenerating(false);
+    clearFridgeInputs(); // this fridge belongs to this plan now; next week starts clean
     renderResults(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     toast('Your week is planned', 'success');
   } catch(e) {
     clearInterval(stepTimer);
     setGenerating(false);
-    showError(e.message);
-    if (state.plan) renderResults(false); else $('results').classList.add('hidden');
+    const msg = /[.!?]$/.test(e.message.trim()) ? e.message.trim() : e.message.trim() + '.';
+    showError(msg + (state.plan ? ' Your current plan hasn\'t changed.' : ''));
+    if (state.plan) { renderResults(false); updatePlanFormVisibility(); } else $('results').classList.add('hidden');
   }
 }
 
@@ -2071,7 +2169,7 @@ async function swapMeal(idx, opts) {
   opts = opts || {};
   if (state.swapInProgress || state.busy) { toast('One moment, still working on the last change','error'); return; }
   const meal = state.plan.meals[idx];
-  const fridgeText = $('fridgeText').value.trim();
+  const fridgeText = planFridgeContext();
   const profile = getProfile();
   const others = state.plan.meals.filter((_,i) => i!==idx).map(m => m.title);
   const staples = getStaples();
@@ -2097,7 +2195,7 @@ async function swapMeal(idx, opts) {
   toast(opts.cheaper ? 'Finding something cheaper…' : 'Finding something else…', '');
 
   try {
-    const newMeal = await callAI(SWAP_PROMPT, userText, MEAL_SCHEMA, true);
+    const newMeal = normalizeMeal(await callAI(SWAP_PROMPT, userText, MEAL_SCHEMA, false));
     newMeal.day = meal.day || null; // keep the day it was assigned to
     if (meal.makes_leftovers && !opts.cheaper) newMeal.makes_leftovers = false;
     state.plan.meals[idx] = newMeal;
@@ -2176,7 +2274,7 @@ async function submitAddMeal() {
   if (addCard) { addCard.parentNode.insertBefore(placeholder.firstChild, addCard); addCard.classList.add('hidden'); }
   state.busy = true;
   try {
-    const newMeal = await callAI(SWAP_PROMPT, userText, MEAL_SCHEMA, true);
+    const newMeal = normalizeMeal(await callAI(SWAP_PROMPT, userText, MEAL_SCHEMA, false));
     newMeal.day = null;
     state.plan.meals.push(newMeal);
     normalizeDays(state.plan.meals);
@@ -2208,7 +2306,8 @@ async function regenShoppingList() {
   const pax = (parseInt(profile.adults) || 2) + (parseInt(profile.kids) || 0);
   const staples = getStaples();
   let userText = 'Generate a shopping list for these meals, for ' + pax + ' people: ' + titles + '.';
-  if (hasFridgeContext() && $('fridgeText').value.trim()) userText += ' Leave out anything already in the fridge: ' + $('fridgeText').value.trim() + '.';
+  const fc = planFridgeContext();
+  if (fc) userText += ' Leave out anything already in the fridge: ' + fc + '.';
   if (staples.length) userText += ' Leave out these pantry staples the family always has: ' + staples.join(', ') + '.';
   if (profile.allergies) userText += ' Exclude: ' + profile.allergies + '.';
 
@@ -2217,7 +2316,7 @@ async function regenShoppingList() {
   try {
     const sl = await callAI(SHOPPING_PROMPT, userText, SHOPPING_SCHEMA, false);
     if (seq !== shopListSeq) return; // a newer update is on its way
-    state.plan.shopping_list = sl;
+    state.plan.shopping_list = normalizeShopping(sl);
     if (customItems.length) state.plan.shopping_list['Extra Items'] = customItems;
     savePlan();
     const factor = getCalibration().factor;
@@ -2244,6 +2343,7 @@ function renderResults(animate) {
   if (!state.plan) return;
   $('results').classList.remove('hidden');
   renderMealCards(animate);
+  renderFridgeSeen();
   renderShoppingList();
   updatePlanFormVisibility();
 }
