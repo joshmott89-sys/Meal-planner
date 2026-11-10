@@ -258,6 +258,17 @@
   .spend-row .mini span { display: block; height: 100%; background: var(--accent-fill); border-radius: 999px; }
   .spend-summary { margin-top: 14px; padding: 10px 12px; border-radius: 12px; background: var(--surface2); font-size: 13px; line-height: 1.45; }
 
+  /* ── FAVOURITES & PRICES ───────────────────────────────── */
+  .fav-card { padding: 16px 18px; }
+  .fav-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .fav-title { font-family: 'Fraunces', Georgia, serif; font-weight: 600; font-size: 1.1rem; color: var(--text); text-decoration: none; line-height: 1.3; }
+  .fav-stars { color: #E8A93A; font-size: 13px; white-space: nowrap; padding-top: 4px; }
+  .fav-actions { display: flex; gap: 8px; margin-top: 12px; align-items: center; }
+  .fav-actions .btn-accent { flex: 1; }
+  .in-plan { flex: 1; font-size: 13px; font-weight: 600; color: var(--mint); }
+  .price-edit { background: none; border: none; cursor: pointer; padding: 4px 2px; font-family: inherit; text-decoration: underline dotted; text-underline-offset: 3px; }
+  .new-week-btn { border-style: solid; margin-bottom: 14px; }
+
   /* ── AI SETUP ───────────────────────────────────────────── */
   .provider-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .provider { border: 1px solid var(--border); background: var(--surface2); border-radius: 16px; padding: 12px; cursor: pointer; text-align: left; font-family: inherit; color: var(--text); transition: all 0.15s; min-height: 64px; }
@@ -282,7 +293,7 @@
 
   /* ── BOTTOM NAV ─────────────────────────────────────────── */
   .bottom-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; background: var(--surface); border-top: 1px solid var(--border); padding: 6px 12px calc(6px + env(safe-area-inset-bottom)); display: flex; justify-content: center; }
-  .bottom-nav .inner { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; width: 100%; max-width: 480px; }
+  .bottom-nav .inner { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; width: 100%; max-width: 480px; }
   .nav-btn { position: relative; background: none; border: none; color: var(--muted); font-family: inherit; font-size: 12px; font-weight: 600; padding: 6px 4px; border-radius: 14px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 54px; }
   .nav-btn svg { width: 22px; height: 22px; }
   .nav-btn.active { color: var(--accent); background: var(--accent-soft); }
@@ -342,10 +353,10 @@
       <button class="btn btn-accent" onclick="showTab('settings')">Set up</button>
     </div>
 
+    <button class="btn btn-accent new-week-btn hidden" id="newWeekBtn" onclick="openPlanForm()">&#43; Plan a new week</button>
+
     <div class="card tonight hidden" id="tonightCard"></div>
     <div class="card hidden" id="budgetCard"></div>
-
-    <button class="btn new-week-btn hidden" id="newWeekBtn" onclick="openPlanForm()">&#43; Plan a new week (start fresh)</button>
 
     <div id="planForm">
       <div class="notice hidden" id="freshNote">
@@ -485,6 +496,13 @@
     </div>
   </section>
 
+  <!-- ═════════════ FAVOURITES TAB ═════════════ -->
+  <section class="tab-panel hidden" id="tab-favs">
+    <h2 class="section-title" style="margin-top:4px;">Favourites</h2>
+    <input class="input hidden" id="favSearch" placeholder="Search favourites" oninput="renderFavourites()" style="margin-bottom:12px;">
+    <div id="favList"></div>
+  </section>
+
   <!-- ═════════════ SETTINGS TAB ═════════════ -->
   <section class="tab-panel hidden" id="tab-settings">
     <h2 class="section-title" style="margin-top:4px;">Settings</h2>
@@ -601,6 +619,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
       Shopping
       <span class="nav-badge hidden" id="shopBadge">0</span>
+    </button>
+    <button class="nav-btn" data-tab="favs" onclick="showTab('favs')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      Favourites
     </button>
     <button class="nav-btn" data-tab="settings" onclick="showTab('settings')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
@@ -886,6 +908,7 @@ function showTab(name) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('hidden', p.id !== 'tab-' + name));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   closeMenus();
+  if (name === 'favs') renderFavourites();
   window.scrollTo({ top: 0 });
 }
 
@@ -988,7 +1011,8 @@ function toggleFavourite(idx) {
   if (!meal) return;
   const title = meal.title;
   if (state.favourites.has(title)) { state.favourites.delete(title); toast('Removed from favourites',''); }
-  else { state.favourites.add(title); toast('Saved to favourites','success'); }
+  else { state.favourites.add(title); saveFavMeal(meal); toast('Saved to favourites','success'); }
+  if (!state.favourites.has(title)) dropFavMeal(title);
   saveFavourites();
   updateFavSummary();
   const btn = document.querySelector('[data-fav="'+idx+'"]');
@@ -997,6 +1021,7 @@ function toggleFavourite(idx) {
 function clearFavourites() {
   if (!confirm('Clear all saved favourites?')) return;
   state.favourites.clear();
+  localStorage.removeItem('mp_fav_meals');
   saveFavourites();
   updateFavSummary();
   if (state.plan) renderMealCards(false);
@@ -1007,7 +1032,7 @@ function rateMeal(idx, stars) {
   state.ratings[meal.title] = { r: stars, date: Date.now() };
   localStorage.setItem('mp_ratings', JSON.stringify(state.ratings));
   if (stars >= 4 && !state.favourites.has(meal.title)) {
-    state.favourites.add(meal.title); saveFavourites(); updateFavSummary();
+    state.favourites.add(meal.title); saveFavMeal(meal); saveFavourites(); updateFavSummary();
     toast(stars + '★, saved to favourites', 'success');
   } else if (stars <= 2) {
     toast('Got it, we\'ll suggest that one less', '');
@@ -1016,6 +1041,209 @@ function rateMeal(idx, stars) {
 }
 function getRatedTitles(test) {
   return Object.keys(state.ratings).filter(t => test(state.ratings[t].r));
+}
+
+// ── FAVOURITES CATALOGUE ─────────────────────────────────────
+// Full meal details are saved with each favourite, so adding one back to a plan is instant and free.
+function getFavMeals() { return readJSON('mp_fav_meals', {}); }
+function saveFavMeal(meal) {
+  if (!meal || !meal.title) return;
+  const all = getFavMeals();
+  const copy = JSON.parse(JSON.stringify(meal));
+  delete copy.day;
+  copy.saved = (all[meal.title] && all[meal.title].saved) || Date.now();
+  all[meal.title] = copy;
+  try { localStorage.setItem('mp_fav_meals', JSON.stringify(all)); } catch(e) {}
+}
+function dropFavMeal(title) {
+  const all = getFavMeals(); delete all[title];
+  localStorage.setItem('mp_fav_meals', JSON.stringify(all));
+}
+var favView = [];
+function renderFavourites() {
+  const el = $('favList');
+  const q = ($('favSearch').value || '').toLowerCase().trim();
+  const details = getFavMeals();
+  $('favSearch').classList.toggle('hidden', state.favourites.size < 5);
+  if (!state.favourites.size) {
+    el.innerHTML = '<div class="card empty"><div class="big">' + ICO.heart + '</div><h3>Save the meals you love</h3>'
+      + '<p>Tap the heart on any meal in your plan, or rate it 4 stars or more. It\'ll appear here so you can add it back to a week with one tap.</p></div>';
+    favView = []; return;
+  }
+  const rating = t => (state.ratings[t] ? state.ratings[t].r : 0);
+  favView = [...state.favourites].filter(t => !q || t.toLowerCase().indexOf(q) >= 0)
+    .sort((a, b) => (rating(b) - rating(a)) || (((details[b] || {}).saved || 0) - ((details[a] || {}).saved || 0)));
+  if (!favView.length) { el.innerHTML = '<p class="hint" style="text-align:center;">No favourites match "' + escH(q) + '".</p>'; return; }
+  el.innerHTML = favView.map((t, i) => {
+    const m = details[t] || {};
+    const inPlan = !!(state.plan && state.plan.meals.some(x => x.title === t));
+    const r = rating(t);
+    const url = m.recipetin_search_url ? escH(m.recipetin_search_url) : 'https://www.google.com/search?q=site:recipetineats.com+' + encodeURIComponent(t);
+    const meta = [m.prep_time && escH(m.prep_time), m.difficulty && escH(m.difficulty), m.estimated_cost_aud && escH(m.estimated_cost_aud)].filter(Boolean).join(' · ');
+    return '<div class="card fav-card">'
+      + '<div class="fav-top"><a class="fav-title" href="' + url + '" target="_blank" rel="noopener">' + escH(t) + '</a>'
+      + (r ? '<span class="fav-stars" aria-label="' + r + ' stars">' + '★'.repeat(r) + '</span>' : '') + '</div>'
+      + (meta ? '<div class="hint" style="margin:4px 0 0;">' + meta + '</div>' : '')
+      + (m.description ? '<p class="meal-desc" style="margin:8px 0 0;">' + escH(m.description) + '</p>' : '')
+      + '<div class="fav-actions">'
+      + (inPlan ? '<span class="in-plan">✓ In this week\'s plan</span>'
+                : '<button class="btn btn-accent" onclick="addFavToPlan(' + i + ')">+ Add to plan</button>')
+      + '<button class="btn" onclick="removeFav(' + i + ')" aria-label="Remove from favourites">Remove</button>'
+      + '</div></div>';
+  }).join('');
+}
+async function addFavToPlan(i) {
+  const title = favView[i];
+  if (!title) return;
+  if (state.busy || state.swapInProgress) { toast('One moment, still working on the last change', 'error'); return; }
+  if (state.plan && state.plan.meals.some(m => m.title === title)) { toast('Already in this week\'s plan', ''); return; }
+  let meal = getFavMeals()[title];
+  if (meal) meal = JSON.parse(JSON.stringify(meal));
+  else {
+    // Older favourites were saved by name only, so look the recipe up once and keep it
+    if (!getKey()) { showTab('settings'); toast('Set up the AI in Settings first', 'error'); return; }
+    const profile = getProfile();
+    const pax = (parseInt(profile.adults) || 2) + (parseInt(profile.kids) || 0);
+    state.busy = true;
+    toast('Looking up ' + title + '…', '');
+    try {
+      meal = normalizeMeal(await callAI(SWAP_PROMPT, 'Return the RecipeTin Eats recipe called "' + title + '" (or the closest match) for ' + pax + ' people.', MEAL_SCHEMA, false));
+      meal.title = title;
+      saveFavMeal(meal);
+    } catch(e) { toast('Couldn\'t look it up: ' + e.message, 'error'); return; }
+    finally { state.busy = false; }
+  }
+  normalizeMeal(meal);
+  if (!state.plan) { state.plan = { meals: [], shopping_list: {}, fridge_seen: [] }; state.currentGenId = Date.now(); state.lastDelta = null; }
+  // The fridge has changed since this meal was saved: only keep "in fridge" items you have this week
+  const seen = (state.plan.fridge_seen || []).map(s => s.toLowerCase());
+  const have = [], need = meal.ingredients.need.slice();
+  meal.ingredients.have.forEach(x => {
+    const lx = x.toLowerCase();
+    if (seen.some(s => s.indexOf(lx) >= 0 || lx.indexOf(s) >= 0)) have.push(x); else need.push(x);
+  });
+  meal.ingredients.have = have; meal.ingredients.need = need;
+  meal.day = null;
+  meal.makes_leftovers = false;
+  state.plan.meals.push(meal);
+  normalizeDays(state.plan.meals);
+  sortMealsByDay(state.plan.meals);
+  state.history.push({ title: meal.title, date: Date.now(), genId: state.currentGenId });
+  saveHistory();
+  savePlan();
+  renderResults(false);
+  renderFavourites();
+  toast('Added ' + meal.title + (meal.day ? ' on ' + meal.day : ''), 'success');
+  regenShoppingList();
+}
+function removeFav(i) {
+  const title = favView[i];
+  if (!title) return;
+  state.favourites.delete(title);
+  dropFavMeal(title);
+  saveFavourites();
+  updateFavSummary();
+  renderFavourites();
+  if (state.plan) renderMealCards(false);
+  toast('Removed from favourites', '');
+}
+
+// ── PRICE ESTIMATES FOR EXTRA ITEMS ──────────────────────────
+// A starter table of rough Australian supermarket prices (Nov 2026). Estimates then improve:
+// 1) a price you enter or correct is remembered for that item and used next time,
+// 2) prices drift up with inflation as time passes, and
+// 3) your logged receipts adjust the trolley total (see getCalibration).
+var PRICE_TABLE_DATE = new Date(2026, 10, 1).getTime();
+var PRICE_INFLATION = 0.03; // per year
+var PRICE_TABLE = [
+  [['toilet paper','toilet roll','loo roll'], 9.50, '12 rolls'], [['paper towel','paper towels'], 4.50, '2 rolls'],
+  [['tissues','tissue'], 3.50, 'box'], [['serviettes','napkins'], 3.00, 'pack'],
+  [['dishwashing liquid','dish soap','washing up liquid','detergent'], 4.50, '500ml'], [['dishwasher tablets','dishwasher pods','dishwasher'], 15.00, 'pack'],
+  [['laundry liquid','laundry detergent'], 14.00, '2L'], [['laundry powder','washing powder'], 12.00, '2kg'], [['fabric softener','softener'], 6.00, '1L'],
+  [['bin bags','garbage bags','bin liners','rubbish bags'], 5.00, 'pack'], [['cling wrap','glad wrap','plastic wrap'], 4.00, 'roll'],
+  [['foil','aluminium foil','alfoil'], 4.50, 'roll'], [['baking paper'], 4.00, 'roll'], [['zip lock bags','ziplock bags','sandwich bags'], 4.00, 'pack'],
+  [['sponges','sponge','scourer','scourers'], 3.00, 'pack'], [['spray cleaner','surface spray','kitchen spray','cleaner'], 5.00, 'bottle'],
+  [['bleach'], 3.50, '2L'], [['hand wash','handwash','hand soap'], 4.00, 'bottle'], [['soap'], 3.50, 'pack'],
+  [['shampoo'], 7.00, 'bottle'], [['conditioner'], 7.00, 'bottle'], [['body wash','shower gel'], 6.50, 'bottle'],
+  [['toothpaste'], 4.50, 'tube'], [['toothbrush','toothbrushes'], 4.00, 'each'], [['deodorant'], 6.50, 'each'],
+  [['razors','razor'], 10.00, 'pack'], [['sunscreen'], 12.00, 'bottle'], [['nappies','diapers'], 22.00, 'pack'],
+  [['baby wipes','wipes'], 5.00, 'pack'], [['pads','tampons'], 5.50, 'pack'], [['panadol','paracetamol','ibuprofen','nurofen'], 6.00, 'pack'],
+  [['milk'], 3.40, '2L'], [['bread','loaf'], 4.00, 'loaf'], [['wraps','tortillas'], 4.00, 'pack'], [['eggs','egg'], 6.50, 'dozen'],
+  [['butter'], 6.50, '500g'], [['cheese'], 9.00, '500g block'], [['yoghurt','yogurt'], 6.00, '1kg'], [['cream'], 4.50, '600ml'],
+  [['bananas','banana'], 4.00, '1kg'], [['apples','apple'], 5.00, '1kg'], [['oranges','orange'], 4.50, '1kg'], [['grapes'], 6.00, '1kg'],
+  [['strawberries'], 4.50, 'punnet'], [['blueberries'], 5.00, 'punnet'], [['avocado','avocados'], 2.00, 'each'], [['lettuce'], 3.00, 'each'],
+  [['tomatoes','tomato'], 6.00, '1kg'], [['potatoes','potato'], 4.50, '2kg'], [['onions','onion'], 3.50, '1kg'], [['carrots','carrot'], 2.50, '1kg'],
+  [['coffee beans','ground coffee'], 14.00, '500g'], [['instant coffee','coffee'], 10.00, 'jar'], [['coffee pods','coffee capsules'], 8.00, '10 pods'],
+  [['tea bags','tea'], 4.50, '100 bags'], [['sugar'], 3.00, '1kg'], [['flour'], 3.00, '1kg'], [['rice'], 3.50, '1kg'],
+  [['pasta','spaghetti','penne'], 2.00, '500g'], [['pasta sauce'], 4.00, 'jar'], [['cereal','corn flakes'], 6.00, 'box'],
+  [['weet bix','weetbix'], 5.50, '1kg'], [['oats','porridge'], 4.00, '1kg'], [['muesli bars','muesli bar'], 4.50, 'box'], [['muesli','granola'], 6.00, 'box'],
+  [['peanut butter'], 5.00, 'jar'], [['vegemite'], 6.50, 'jar'], [['jam'], 4.00, 'jar'], [['honey'], 7.00, 'jar'],
+  [['olive oil'], 12.00, '750ml'], [['vegetable oil','canola oil','cooking oil'], 6.00, '1L'],
+  [['tuna'], 2.50, 'can'], [['baked beans'], 1.50, 'can'], [['tinned tomatoes','canned tomatoes','diced tomatoes'], 1.50, 'can'],
+  [['chips','crisps'], 4.50, 'bag'], [['crackers','rice crackers'], 3.50, 'pack'], [['biscuits','cookies','tim tams'], 4.00, 'pack'],
+  [['chocolate'], 5.00, 'block'], [['lollies'], 4.50, 'bag'], [['ice cream'], 7.00, '2L'],
+  [['frozen vegetables','frozen veg','frozen peas'], 4.00, '1kg'], [['frozen chips','fries'], 5.00, '1kg'], [['frozen pizza','pizza'], 7.00, 'each'],
+  [['soft drink','coke','lemonade'], 3.50, '2L'], [['juice'], 5.00, '2L'], [['sparkling water','mineral water'], 4.00, '1.25L x4'],
+  [['dog food'], 10.00, 'bag or pack'], [['cat food'], 6.00, 'pack'], [['cat litter','kitty litter'], 9.00, 'bag'],
+  [['batteries'], 10.00, 'pack'], [['light bulb','light globe'], 6.00, 'each'], [['candles'], 5.00, 'pack']
+];
+function normItemName(n) { return String(n || '').toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim(); }
+// "2 milk", "2x milk" or "milk x2" mean two of them
+function splitQty(n) {
+  const s = String(n || '').trim();
+  let m = s.match(/^(\d{1,2})\s*x?\s+(.+)$/i);
+  if (m && parseInt(m[1]) > 0) return { mult: parseInt(m[1]), base: m[2] };
+  m = s.match(/^(.+?)\s*x\s*(\d{1,2})$/i);
+  if (m && parseInt(m[2]) > 0) return { mult: parseInt(m[2]), base: m[1] };
+  return { mult: 1, base: s };
+}
+function inflateSince(ts) {
+  const yrs = Math.max(0, (Date.now() - ts) / (365.25 * 864e5));
+  return Math.pow(1 + PRICE_INFLATION, yrs);
+}
+function estimatePrice(name) {
+  const q = splitQty(name);
+  const key = normItemName(q.base);
+  if (!key) return null;
+  const learned = readJSON('mp_item_prices', {})[key];
+  if (learned) return { price: learned.price * inflateSince(learned.date) * q.mult, source: 'your last price', mult: q.mult };
+  let best = null;
+  PRICE_TABLE.forEach(row => row[0].forEach(k => {
+    if (new RegExp('(^| )' + k + 's?( |$)').test(key) && (!best || k.length > best.k.length)) best = { k: k, price: row[1], size: row[2] };
+  }));
+  if (!best) return null;
+  return { price: best.price * inflateSince(PRICE_TABLE_DATE) * q.mult, source: 'typical price' + (best.size ? ', ' + best.size : ''), mult: q.mult };
+}
+function learnPrice(name, price) {
+  const q = splitQty(name);
+  const key = normItemName(q.base);
+  if (!key || !(price > 0)) return;
+  const all = readJSON('mp_item_prices', {});
+  all[key] = { price: Math.round(price / q.mult * 100) / 100, date: Date.now() };
+  localStorage.setItem('mp_item_prices', JSON.stringify(all));
+}
+function updatePriceHint() {
+  const name = $('newItemName').value.trim();
+  const hint = $('priceHint');
+  const est = name ? estimatePrice(name) : null;
+  $('newItemCost').placeholder = est ? est.price.toFixed(2) : '$';
+  if (!name) { hint.textContent = ''; return; }
+  hint.textContent = est
+    ? '≈ $' + est.price.toFixed(2) + ' (' + est.source + (est.mult > 1 ? ', ×' + est.mult : '') + '). Leave the price blank to use it.'
+    : 'No estimate for this yet. Add a price and it\'ll be remembered.';
+}
+function editExtraPrice(i) {
+  const it = ((state.plan && state.plan.shopping_list && state.plan.shopping_list['Extra Items']) || [])[i];
+  if (!it) return;
+  const v = prompt('What does "' + it.name + '" cost? This also improves future estimates.', it.cost ? Number(it.cost).toFixed(2) : '');
+  if (v === null) return;
+  const n = parseFloat(String(v).replace(/[^0-9.]/g, ''));
+  if (!(n >= 0)) { toast('Enter a price like 9.50', 'error'); return; }
+  it.cost = n; it.est = false;
+  learnPrice(it.name, n);
+  savePlan();
+  renderShoppingList();
+  toast('Price saved for next time', 'success');
 }
 
 // ── INIT ─────────────────────────────────────────────────────
@@ -1589,6 +1817,7 @@ function closePlanForm() {
   planFormOpen = false;
   hideError();
   updatePlanFormVisibility();
+  renderTonight(); renderBudget();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 function clearCurrentPlan() {
@@ -1667,6 +1896,7 @@ function openPlanForm() {
   hideError();
   $('freshNote').classList.remove('hidden');
   updatePlanFormVisibility();
+  renderTonight(); renderBudget();
   $('planForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -1706,6 +1936,7 @@ function dayKey(offset) {
 // ── TONIGHT CARD ─────────────────────────────────────────────
 function renderTonight() {
   const el = $('tonightCard');
+  if (planFormOpen) { el.classList.add('hidden'); return; } // the new-week form sits at the top instead
   if (!state.plan || !state.plan.meals.length) { el.classList.add('hidden'); return; }
   const t = dayKey(0), meals = state.plan.meals;
   const find = off => meals.find(m => m.day === dayKey(off));
@@ -1745,6 +1976,7 @@ function getCalibration() {
 }
 function renderBudget() {
   const el = $('budgetCard');
+  if (planFormOpen) { el.classList.add('hidden'); return; }
   if (!state.plan) { el.classList.add('hidden'); return; }
   const cal = getCalibration();
   const est = listTotal() * cal.factor;
@@ -2352,6 +2584,8 @@ function renderMealCards(animate) {
   const recentCutoff = Date.now() - 14*24*60*60*1000;
   const addMealCardHTML = '<div class="add-meal-card" onclick="openAddModal()">&#43; Add a meal</div>';
   const showNutrition = getWeek().nutrition;
+  const favDetails = getFavMeals();
+  state.plan.meals.forEach(m => { if (state.favourites.has(m.title) && !favDetails[m.title]) saveFavMeal(m); });
   updateFavSummary();
 
   $('mealCards').innerHTML = state.plan.meals.map((m, i) => {
@@ -2459,7 +2693,9 @@ function renderShoppingList() {
         + '<input type="checkbox" id="' + escH(key) + '" onchange="tickItem(this)">'
         + '<label for="' + escH(key) + '">' + escH(name) + '</label>'
         + (qty ? '<span class="qty">' + escH(qty) + '</span>' : '')
-        + (cost > 0 ? '<span class="item-cost">$' + cost.toFixed(2) + '</span>' : '')
+        + (cat === 'Extra Items'
+            ? '<button class="item-cost price-edit" onclick="editExtraPrice(' + itemIdx + ')" title="Tap to change price">' + (cost > 0 ? (item.est ? '~$' : '$') + cost.toFixed(2) : '$?') + '</button>'
+            : (cost > 0 ? '<span class="item-cost">$' + cost.toFixed(2) + '</span>' : ''))
         + (store ? storeItemHTML(store, name) : '')
         + (cat === 'Extra Items' ? '<button class="x-btn" onclick="removeExtraItem(' + itemIdx + ')" aria-label="Remove">' + ICO.x + '</button>' : '')
         + '</div>';
@@ -2470,10 +2706,11 @@ function renderShoppingList() {
   html += '<div class="shop-section" style="margin-top:20px;padding-top:14px;border-top:1px dashed var(--border-strong);">'
         + '<div class="shop-category">Add something else</div>'
         + '<div class="row">'
-        + '<input type="text" id="newItemName" class="input" placeholder="Toilet paper" onkeydown="if(event.key===\'Enter\')addCustomItem()">'
+        + '<input type="text" id="newItemName" class="input" placeholder="Toilet paper" oninput="updatePriceHint()" onkeydown="if(event.key===\'Enter\')addCustomItem()">'
         + '<input type="number" id="newItemCost" class="input" placeholder="$" inputmode="decimal" style="max-width:76px;flex:none;" step="0.5">'
         + '<button class="btn btn-accent" onclick="addCustomItem()">Add</button>'
-        + '</div></div>';
+        + '</div><p class="hint" id="priceHint"></p>'
+        + '<p class="hint" style="margin-top:2px;">Prices for extras are a starting guide. Tap a price to correct it and it\'s remembered. Estimates rise slowly with inflation, and your receipts adjust the total.</p></div>';
   html += '<div class="shop-cost"><span id="stillLabel">Still to buy</span><span id="dynamicTotalCost">~$0.00</span></div>';
   $('shoppingList').innerHTML = html;
 
@@ -2519,11 +2756,17 @@ function updateShopBadge() {
 
 function addCustomItem() {
   const name = $('newItemName').value.trim();
-  const cost = parseFloat($('newItemCost').value) || 0;
+  const typed = parseFloat($('newItemCost').value);
   if (!name) return;
+  let item;
+  if (typed >= 0) { item = { name, cost: typed, est: false }; learnPrice(name, typed); }
+  else {
+    const est = estimatePrice(name);
+    item = { name, cost: est ? Math.round(est.price * 100) / 100 : 0, est: !!est };
+  }
   if (!state.plan.shopping_list) state.plan.shopping_list = {};
   if (!state.plan.shopping_list['Extra Items']) state.plan.shopping_list['Extra Items'] = [];
-  state.plan.shopping_list['Extra Items'].push({ name, cost });
+  state.plan.shopping_list['Extra Items'].push(item);
   savePlan();
   renderShoppingList();
   $('newItemName').focus();
@@ -2612,7 +2855,7 @@ function stopMic() {
 }
 
 // ── BACKUP ───────────────────────────────────────────────────
-var BACKUP_KEYS = ['mp_family','mp_fav_titles','mp_history','mp_blacklist','mp_ratings','mp_staples','mp_plan','mp_provider','mp_models','mp_custom_models','mp_theme','mp_fridge','mp_prefs','mp_week','mp_spend'];
+var BACKUP_KEYS = ['mp_family','mp_fav_titles','mp_history','mp_blacklist','mp_ratings','mp_staples','mp_plan','mp_provider','mp_models','mp_custom_models','mp_theme','mp_fridge','mp_prefs','mp_week','mp_spend','mp_fav_meals','mp_item_prices'];
 function exportBackup() {
   const data = {};
   BACKUP_KEYS.forEach(k => { const v = localStorage.getItem(k); if (v != null) data[k] = v; });
