@@ -269,6 +269,14 @@
   .price-edit { background: none; border: none; cursor: pointer; padding: 4px 2px; font-family: inherit; text-decoration: underline dotted; text-underline-offset: 3px; }
   .new-week-btn { border-style: solid; margin-bottom: 14px; }
 
+  /* ── REAL RECIPES & HIDDEN KEY ─────────────────────────── */
+  .badge-real { background: var(--mint-soft); color: var(--mint); }
+  .badge-guess { background: var(--butter-soft); color: var(--butter); }
+  .ing-src { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--muted); }
+  .key-saved { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; background: var(--mint-soft); border: 1px solid var(--mint-border); color: var(--mint); border-radius: 14px; padding: 10px 12px; font-size: 14px; font-weight: 600; }
+  .key-saved-btns { display: flex; gap: 6px; }
+  .key-saved .btn { min-height: 36px; padding: 6px 12px; }
+
   /* ── AI SETUP ───────────────────────────────────────────── */
   .provider-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .provider { border: 1px solid var(--border); background: var(--surface2); border-radius: 16px; padding: 12px; cursor: pointer; text-align: left; font-family: inherit; color: var(--text); transition: all 0.15s; min-height: 64px; }
@@ -523,8 +531,15 @@
         <input class="input" type="password" id="apiKey" placeholder="Paste your key" autocomplete="off" spellcheck="false" oninput="onKeyInput()">
         <button class="btn btn-accent" id="testKeyBtn" onclick="saveAndTestKey()">Save and test</button>
       </div>
+      <div class="key-saved hidden" id="keySaved">
+        <span id="keySavedText">Key saved</span>
+        <span class="key-saved-btns">
+          <button class="btn" onclick="replaceKey()">Replace</button>
+          <button class="btn btn-danger" onclick="removeKey()">Remove</button>
+        </span>
+      </div>
       <p class="key-status" id="keyStatus"></p>
-      <p class="hint">Stored on this device only, and sent only to the provider you choose.</p>
+      <p class="hint">Your key is hidden once saved. It's stored on this device only, sent only to the provider you choose, and left out of backups.</p>
 
       <label style="margin-top:16px;">4. Pick a model</label>
       <select class="input" id="modelSelect" onchange="saveModelChoice()"></select>
@@ -650,8 +665,11 @@
 <div class="modal-overlay" id="shareSetupModal">
   <div class="modal">
     <h3>Share your setup</h3>
-    <p>Send this link to family so they can start planning without making their own key.</p>
-    <div class="warn-box">Anyone with this link can use your key, and you pay for what they use. Only send it to people you trust. You can cancel the key at any time on <span id="shareProviderName">the provider's</span> website.</div>
+    <p>Send family a link so they can start planning without making their own key. Your key is locked inside the link with a passcode, so the link is useless on its own.</p>
+    <label for="sharePass">Choose a passcode</label>
+    <input class="input" id="sharePass" type="text" autocomplete="off" spellcheck="false" placeholder="At least 6 characters">
+    <p class="key-status bad" id="sharePassErr"></p>
+    <div class="warn-box" style="margin-top:10px;">Tell them the passcode separately, in person or by phone. Anyone with both the link and the passcode can use your key, and you pay for what they use. You can cancel the key at any time on <span id="shareProviderName">the provider's</span> website.</div>
     <div class="modal-btns" style="margin-top:14px;">
       <button class="btn" onclick="closeShareSetup()">Cancel</button>
       <button class="btn-primary" onclick="shareSetupLink()">Share link</button>
@@ -663,7 +681,12 @@
   <div class="modal">
     <h3>Use this setup?</h3>
     <p id="importSetupText">Someone shared their AI setup with you.</p>
-    <div class="modal-btns">
+    <div id="importPassWrap" class="hidden">
+      <label for="importPass">Passcode</label>
+      <input class="input" id="importPass" type="text" autocomplete="off" spellcheck="false" placeholder="The passcode they gave you" onkeydown="if(event.key==='Enter')acceptImportSetup()">
+      <p class="key-status bad" id="importPassErr"></p>
+    </div>
+    <div class="modal-btns" style="margin-top:14px;">
       <button class="btn" onclick="declineImportSetup()">No thanks</button>
       <button class="btn-primary" onclick="acceptImportSetup()">Use it</button>
     </div>
@@ -847,9 +870,13 @@ var SWAP_PROMPT = 'You are a culinary expert specialising in RecipeTin Eats reci
   + 'Return ONLY a single flat JSON meal object.';
 
 var SHOPPING_PROMPT = 'You are a meal planning assistant.\n'
-  + 'Given a list of meal titles, generate a consolidated Woolworths shopping list in exactly these sections:\n'
+  + 'You are given each meal with the ingredients that need to be bought. Build ONE consolidated Woolworths shopping list in exactly these sections:\n'
   + 'Fresh Produce, Meat & Seafood, Dairy & Eggs, Deli & Bakery, Pantry & Aisle, Frozen.\n'
   + 'For each item, return a JSON object with "name" (the ingredient name), "qty" (estimated quantity needed, e.g. "500g", "1 bunch", "2"), and "cost" (rough estimated cost in AUD as a plain number, e.g. 4.5. Use 0 if negligible).\n'
+  + 'RULES: Use ONLY the ingredients listed. Never add an ingredient that is not listed and never leave one out. '
+  + 'When the same ingredient appears in more than one meal, list it once with the quantities added together. '
+  + 'For a meal marked "real recipe", the quantities are exact for the servings stated: scale them to the number of people asked for, and round up to sizes sold in shops. '
+  + 'For a meal marked "quantities not known", estimate sensible quantities for the number of people.\n'
   + 'Return ONLY the JSON shopping list object.';
 
 // ── HELPERS ──────────────────────────────────────────────────
@@ -988,6 +1015,7 @@ function loadPlan() {
   const saved = readJSON('mp_plan', null);
   if (saved && saved.plan && Array.isArray(saved.plan.meals)) {
     state.plan = normalizePlan(saved.plan); // also cleans junk like ",*" from older plans
+    setTimeout(() => { verifyAllMeals(); }, 800);
     state.currentGenId = saved.genId || null;
     renderResults(false);
   }
@@ -1246,6 +1274,156 @@ function editExtraPrice(i) {
   toast('Price saved for next time', 'success');
 }
 
+// ── REAL RECIPES FROM RECIPETIN EATS ─────────────────────────
+// The AI picks the meals, but its ingredient lists are from memory. Here the app looks each meal up
+// on recipetineats.com (through the site's public WordPress feed) and swaps in the real ingredient
+// list, the real title and a link to the clean print view. If the site can't be reached from the
+// browser, nothing breaks: the meal keeps the AI's ingredients and is labelled "AI estimate".
+var RTE_API = 'https://www.recipetineats.com/wp-json/wp/v2/posts';
+var rteBlocked = false; // set when the site can't be reached, so we stop trying for this visit
+var TITLE_STOP = { the: 1, a: 1, an: 1, and: 1, with: 1, of: 1, in: 1, my: 1, easy: 1, best: 1, recipe: 1, nagi: 1, s: 1, recipetin: 1, eats: 1 };
+function titleTokens(t) {
+  return String(t || '').toLowerCase().replace(/&[a-z#0-9]+;/g, ' ').replace(/[^a-z0-9 ]+/g, ' ').split(/\s+/)
+    .filter(w => w && !TITLE_STOP[w]).map(w => w.length > 3 ? w.replace(/s$/, '') : w);
+}
+function titleScore(a, b) {
+  const A = titleTokens(a), B = titleTokens(b);
+  if (!A.length || !B.length) return 0;
+  const inter = A.filter(w => B.indexOf(w) >= 0).length;
+  const union = A.length + B.length - inter;
+  const contained = inter === Math.min(A.length, B.length) && inter >= 2 ? 0.25 : 0; // "Butter Chicken" inside a longer title
+  return Math.min(1, inter / union + contained);
+}
+function plainText(html) { const d = new DOMParser().parseFromString('<body>' + (html || ''), 'text/html'); return (d.body.textContent || '').replace(/\s+/g, ' ').trim(); }
+function cleanIngName(s) {
+  return String(s || '').replace(/\(\s*note[^)]*\)/ig, '').replace(/\s+/g, ' ').replace(/^[\s,]+|[\s,]+$/g, '').trim();
+}
+async function rteFetch(url) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 12000);
+  try {
+    const res = await fetch(url, { signal: ctrl.signal, credentials: 'omit' });
+    if (!res.ok) throw new Error('http ' + res.status);
+    return await res.json();
+  } finally { clearTimeout(timer); }
+}
+// Read the recipe card out of a RecipeTin Eats post
+function parseRecipeCard(html) {
+  const doc = new DOMParser().parseFromString(html || '', 'text/html');
+  const card = doc.querySelector('.wprm-recipe-container') || doc.querySelector('.wprm-recipe') || doc;
+  const lines = [];
+  card.querySelectorAll('.wprm-recipe-ingredient').forEach(li => {
+    const t = sel => { const e = li.querySelector(sel); return e ? e.textContent.replace(/\s+/g, ' ').trim() : ''; };
+    const name = cleanIngName(t('.wprm-recipe-ingredient-name'));
+    if (!hasWord(name)) return;
+    const amount = [t('.wprm-recipe-ingredient-amount'), t('.wprm-recipe-ingredient-unit')].filter(Boolean).join(' ');
+    const notes = cleanIngName(t('.wprm-recipe-ingredient-notes'));
+    const groupEl = li.closest('.wprm-recipe-ingredient-group');
+    const gName = groupEl && groupEl.querySelector('.wprm-recipe-ingredient-group-name');
+    lines.push({ amount: amount, name: name, notes: notes, group: gName ? gName.textContent.trim() : '' });
+  });
+  const serv = card.querySelector('.wprm-recipe-servings');
+  const print = card.querySelector('a.wprm-recipe-print');
+  const href = print ? print.getAttribute('href') : '';
+  return { lines: lines, servings: serv ? serv.textContent.replace(/\s+/g, ' ').trim() : '', print: /^https:\/\/([a-z]+\.)?recipetineats\.com\//.test(href) ? href : '' };
+}
+// Look one meal up. Returns true if the meal changed.
+async function verifyMeal(meal) {
+  if (!meal || meal.rte !== undefined || rteBlocked) return false;
+  let hits;
+  try {
+    hits = await rteFetch(RTE_API + '?search=' + encodeURIComponent(titleTokens(meal.title).join(' ')) + '&orderby=relevance&per_page=8&_fields=id,link,title');
+  } catch(e) { rteBlocked = true; return false; }
+  let best = null, bestScore = 0;
+  (Array.isArray(hits) ? hits : []).forEach(h => {
+    const sc = titleScore(meal.title, plainText(h.title && h.title.rendered));
+    if (sc > bestScore) { best = h; bestScore = sc; }
+  });
+  if (!best || bestScore < 0.5 || !/^https:\/\/([a-z]+\.)?recipetineats\.com\//.test(best.link || '')) { meal.rte = false; return true; }
+  let post;
+  try { post = await rteFetch(RTE_API + '/' + encodeURIComponent(best.id) + '?_fields=id,link,title,content'); }
+  catch(e) { return false; } // try again another time
+  const card = parseRecipeCard(post.content && post.content.rendered);
+  if (card.lines.length < 2) { meal.rte = false; return true; }
+  const realTitle = plainText(post.title && post.title.rendered) || meal.title;
+  // Keep favourites and ratings attached if the title is corrected
+  if (realTitle !== meal.title) {
+    if (state.favourites.has(meal.title)) { state.favourites.delete(meal.title); state.favourites.add(realTitle); dropFavMeal(meal.title); saveFavourites(); }
+    if (state.ratings[meal.title] && !state.ratings[realTitle]) { state.ratings[realTitle] = state.ratings[meal.title]; delete state.ratings[meal.title]; localStorage.setItem('mp_ratings', JSON.stringify(state.ratings)); }
+    state.history.push({ title: realTitle, date: Date.now(), genId: state.currentGenId });
+    meal.title = realTitle;
+  }
+  meal.rte = { url: post.link, print: card.print, servings: card.servings, lines: card.lines };
+  meal.recipetin_search_url = card.print || post.link;
+  classifyReal(meal);
+  return true;
+}
+// Things nearly every kitchen has, so they aren't put on the shopping list
+var PANTRY_RE = /\b(salt|pepper|peppercorns?|water|oil|sugar|flour|cornflour|cornstarch|baking (powder|soda)|bicarb\w*|vinegar|soy sauce|fish sauce|oyster sauce|worcestershire|ketchup|tomato sauce|mustard|honey|stock (powder|cube)s?|bouillon|cumin|paprika|turmeric|tumeric|garam masala|curry powder|chilli (powder|flakes)|cayenne|oregano|thyme leaves|dried \w+|ground \w+|\w+ powder|cinnamon|nutmeg|bay lea(f|ves)|sesame seeds|cooking spray)\b/i;
+var FRESH_RE = /\b(fresh|bunch|sprigs?)\b/i;
+function classifyReal(meal) {
+  if (!meal || !meal.rte || !meal.rte.lines) return;
+  const seen = ((state.plan && state.plan.fridge_seen) || []).map(s => s.toLowerCase());
+  const staples = getStaples().map(s => s.toLowerCase());
+  const hit = (list, n) => list.some(s => s && (n.indexOf(s) >= 0 || (s.indexOf(n) >= 0 && n.length > 3)));
+  const have = [], pantry = [], need = [], seenNames = {};
+  meal.rte.lines.forEach(l => {
+    const n = l.name.toLowerCase();
+    l.bucket = hit(seen, n) ? 'have' : (hit(staples, n) || (PANTRY_RE.test(n) && !FRESH_RE.test(n + ' ' + l.amount))) ? 'pantry' : 'need';
+    if (seenNames[n]) return; seenNames[n] = 1;
+    (l.bucket === 'have' ? have : l.bucket === 'pantry' ? pantry : need).push(l.name);
+  });
+  meal.ingredients = { have: have, pantry: pantry, need: need };
+}
+var verifying = null;
+// Check every meal that hasn't been checked yet. Returns true if any meal changed.
+function verifyAllMeals() {
+  if (verifying) return verifying;
+  verifying = (async () => {
+    let changed = false;
+    const meals = state.plan ? state.plan.meals.slice() : [];
+    for (const m of meals) {
+      if (rteBlocked) break;
+      try { if (await verifyMeal(m)) changed = true; } catch(e) {}
+    }
+    if (changed && state.plan) { savePlan(); renderMealCards(false); if (!$('tab-favs').classList.contains('hidden')) renderFavourites(); }
+    return changed;
+  })();
+  verifying.then(() => { verifying = null; }, () => { verifying = null; });
+  return verifying;
+}
+// What to buy for each meal, written out for the shopping-list builder
+function shoppingBrief() {
+  return state.plan.meals.map(m => {
+    if (m.rte && m.rte.lines) {
+      classifyReal(m);
+      const buy = m.rte.lines.filter(l => l.bucket === 'need').map(l => '- ' + [l.amount, l.name].filter(Boolean).join(' ') + (l.notes ? ' (' + l.notes + ')' : ''));
+      return 'MEAL: ' + m.title + ' [real recipe, written to serve ' + (m.rte.servings || 'about 4') + (m.makes_leftovers ? '; make a DOUBLE batch' : '') + ']\n' + (buy.join('\n') || '- (nothing to buy)');
+    }
+    const need = ((m.ingredients && m.ingredients.need) || []).map(x => '- ' + x);
+    return 'MEAL: ' + m.title + ' [quantities not known, estimate them' + (m.makes_leftovers ? '; make a DOUBLE batch' : '') + ']\n' + (need.join('\n') || '- (nothing to buy)');
+  }).join('\n\n');
+}
+
+// ── PASSCODE-LOCKED SETUP LINKS ──────────────────────────────
+// The key inside a setup link is scrambled with a passcode, so the link alone is useless.
+function b64uBytes(bytes) { let s = ''; bytes.forEach(b => { s += String.fromCharCode(b); }); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+function bytesB64u(str) { str = str.replace(/-/g, '+').replace(/_/g, '/'); while (str.length % 4) str += '='; const bin = atob(str); const out = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i); return out; }
+function canLock() { return !!(window.crypto && crypto.subtle && window.isSecureContext); }
+async function passKey(passcode, salt) {
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(passcode), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: salt, iterations: 200000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+}
+async function lockText(text, passcode) {
+  const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+  const data = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, await passKey(passcode, salt), new TextEncoder().encode(text));
+  return { s: b64uBytes(salt), i: b64uBytes(iv), d: b64uBytes(new Uint8Array(data)) };
+}
+async function unlockText(box, passcode) {
+  const data = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: bytesB64u(box.i) }, await passKey(passcode, bytesB64u(box.s)), bytesB64u(box.d));
+  return new TextDecoder().decode(data);
+}
+
 // ── INIT ─────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   applyTheme(currentTheme());
@@ -1392,9 +1570,15 @@ function renderSetup() {
   $('providerSteps').innerHTML = cfg.steps.map(s => '<li>' + s[0] + (s[1] ? '<span class="note">' + escH(s[1]) + '</span>' : '') + '</li>').join('');
   $('providerLink').href = cfg.keyUrl;
   $('providerLink').innerHTML = escH(cfg.linkText) + ' ' + ICO.external;
-  $('apiKey').value = getKey(p);
+  // A saved key is never put back on screen: only its last 4 characters are shown
+  const saved = getKey(p);
+  const editing = !saved || replacingKey;
+  $('apiKey').value = '';
   $('apiKey').placeholder = 'Paste your key (starts with ' + cfg.keyPrefix + ')';
-  setKeyStatus(getKey(p) ? 'Key saved.' : '', getKey(p) ? 'ok' : '');
+  $('apiKey').parentNode.classList.toggle('hidden', !editing);
+  $('keySaved').classList.toggle('hidden', editing);
+  $('keySavedText').textContent = saved ? cfg.short + ' key saved \u2022\u2022\u2022\u2022 ' + saved.slice(-4) : '';
+  setKeyStatus('', '');
 
   $('modelSelect').innerHTML = cfg.models.map(m => '<option value="' + escH(m.id) + '">' + escH(m.label) + '</option>').join('');
   $('modelSelect').value = getModelId(p);
@@ -1407,11 +1591,23 @@ function renderSetup() {
 
 function selectProvider(p) {
   if (!PROVIDERS[p]) return;
+  replacingKey = false;
   localStorage.setItem('mp_provider', p);
   renderSetup();
   updateKeyNotice();
 }
 
+var replacingKey = false;
+function replaceKey() { replacingKey = true; renderSetup(); $('apiKey').focus(); }
+function removeKey() {
+  const p = getProvider();
+  if (!confirm('Remove your ' + PROVIDERS[p].short + ' key from this device?')) return;
+  const keys = getKeys(); delete keys[p];
+  localStorage.setItem('mp_keys', JSON.stringify(keys));
+  replacingKey = false;
+  renderSetup(); updateKeyNotice();
+  toast('Key removed', '');
+}
 function onKeyInput() {
   const v = $('apiKey').value.trim();
   const cfg = PROVIDERS[getProvider()];
@@ -1436,6 +1632,7 @@ async function saveAndTestKey() {
   const k = $('apiKey').value.trim().replace(/\s+/g, '');
   if (!k) { setKeyStatus('Paste your key first.', 'bad'); return; }
   setJSONKey('mp_keys', p, k);
+  replacingKey = false;
   updateKeyNotice();
   renderSetupGridOnly();
   const btn = $('testKeyBtn');
@@ -1528,21 +1725,27 @@ function b64urlDecode(str) { str = str.replace(/-/g, '+').replace(/_/g, '/'); wh
 
 function openShareSetup() {
   if (!getKey()) { setKeyStatus('Add and save a key before sharing.', 'bad'); return; }
+  if (!canLock()) { toast('Sharing works from the online app, not a downloaded file', 'error'); return; }
   $('shareProviderName').textContent = PROVIDERS[getProvider()].short + '\'s';
+  $('sharePass').value = ''; $('sharePassErr').textContent = '';
   $('shareSetupModal').classList.add('show');
 }
 function closeShareSetup() { $('shareSetupModal').classList.remove('show'); }
-function buildSetupLink() {
+async function buildSetupLink(passcode) {
   const p = getProvider();
-  const payload = { v: 1, p: p, k: getKey(p), m: getModelId(p) };
+  const payload = { v: 2, p: p, m: getModelId(p) };
   if (payload.m === 'custom') payload.c = getCustomModel(p);
+  payload.x = await lockText(getKey(p), passcode); // the key is never in the link in readable form
   return location.origin + location.pathname + '#setup=' + b64urlEncode(JSON.stringify(payload));
 }
-function shareSetupLink() {
+async function shareSetupLink() {
+  const pass = $('sharePass').value.trim();
+  if (pass.length < 6) { $('sharePassErr').textContent = 'Use at least 6 characters.'; return; }
+  let link;
+  try { link = await buildSetupLink(pass); }
+  catch(e) { $('sharePassErr').textContent = 'Couldn\'t make the link on this device.'; return; }
   closeShareSetup();
-  const link = buildSetupLink();
-  if (location.protocol === 'file:') toast('Heads up: links only work once the app is online', 'error');
-  const text = 'Here\'s my meal planner setup. Open this link and tap "Use it":\n' + link;
+  const text = 'Here\'s my meal planner setup. Open this link, then enter the passcode I give you:\n' + link;
   if (navigator.share) {
     navigator.share({ title: 'Meal planner setup', text: text }).catch(err => { if (err && err.name !== 'AbortError') fallbackCopy(link, () => toast('Setup link copied', 'success')); });
   } else if (navigator.clipboard && window.isSecureContext) {
@@ -1556,13 +1759,17 @@ function checkSetupLink() {
   if (!m) return;
   try {
     const s = JSON.parse(b64urlDecode(m[1]));
-    if (!s || !PROVIDERS[s.p] || !s.k) throw new Error('bad');
+    const locked = !!(s && s.x && s.x.d);
+    if (!s || !PROVIDERS[s.p] || (!s.k && !locked)) throw new Error('bad');
+    if (locked && !canLock()) throw new Error('nocrypto');
     pendingSetup = s;
     const model = PROVIDERS[s.p].models.find(x => x.id === s.m);
     $('importSetupText').textContent = 'Someone shared their AI setup with you: ' + PROVIDERS[s.p].name
       + (model ? ' using ' + (s.m === 'custom' ? (s.c || 'a custom model') : model.label.replace(/ \(.*\)$/, '')) : '')
-      + '. Their key will be saved on this device so you can start planning straight away.'
+      + '. ' + (locked ? 'Enter the passcode they gave you to unlock it.' : 'Their key will be saved on this device so you can start planning straight away.')
       + (getKey(s.p) ? ' It replaces the ' + PROVIDERS[s.p].short + ' key you already have.' : '');
+    $('importPassWrap').classList.toggle('hidden', !locked);
+    $('importPass').value = ''; $('importPassErr').textContent = '';
     $('importSetupModal').classList.add('show');
   } catch(e) {
     toast('That setup link didn\'t work. Ask for a new one.', 'error');
@@ -1570,12 +1777,19 @@ function checkSetupLink() {
   }
 }
 function clearSetupHash() { history.replaceState(null, '', location.pathname + location.search); }
-function acceptImportSetup() {
+async function acceptImportSetup() {
   const s = pendingSetup;
+  if (!s) { $('importSetupModal').classList.remove('show'); clearSetupHash(); return; }
+  let key = s.k;
+  if (s.x) {
+    const pass = $('importPass').value.trim();
+    if (!pass) { $('importPassErr').textContent = 'Enter the passcode.'; return; }
+    try { key = await unlockText(s.x, pass); }
+    catch(e) { $('importPassErr').textContent = 'That passcode didn\'t work. Check it and try again.'; return; }
+  }
   $('importSetupModal').classList.remove('show');
   clearSetupHash();
-  if (!s) return;
-  setJSONKey('mp_keys', s.p, s.k);
+  setJSONKey('mp_keys', s.p, key);
   if (s.m && PROVIDERS[s.p].models.some(x => x.id === s.m)) setJSONKey('mp_models', s.p, s.m);
   if (s.c) setJSONKey('mp_custom_models', s.p, s.c);
   localStorage.setItem('mp_provider', s.p);
@@ -2099,6 +2313,7 @@ function closeModal() { $('confirmModal').classList.remove('show'); }
 document.addEventListener('click', e => {
   if (e.target.id === 'confirmModal') closeModal();
   if (e.target.id === 'addMealModal') closeAddModal();
+  if (e.target.id === 'shareSetupModal') closeShareSetup();
   if (!e.target.closest('.card-actions')) closeMenus();
 });
 function toggleMenu(e, idx) {
@@ -2387,6 +2602,7 @@ async function generatePlan() {
     renderResults(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     toast('Your week is planned', 'success');
+    verifyAllMeals().then(changed => { if (changed && state.plan && state.plan.meals.some(m => m.rte)) regenShoppingList(); });
   } catch(e) {
     clearInterval(stepTimer);
     setGenerating(false);
@@ -2533,18 +2749,14 @@ async function regenShoppingList() {
     savePlan(); renderShoppingList(); return;
   }
 
-  const titles = state.plan.meals.map(m => m.title).join(', ');
-  const profile = getProfile();
-  const pax = (parseInt(profile.adults) || 2) + (parseInt(profile.kids) || 0);
-  const staples = getStaples();
-  let userText = 'Generate a shopping list for these meals, for ' + pax + ' people: ' + titles + '.';
-  const fc = planFridgeContext();
-  if (fc) userText += ' Leave out anything already in the fridge: ' + fc + '.';
-  if (staples.length) userText += ' Leave out these pantry staples the family always has: ' + staples.join(', ') + '.';
-  if (profile.allergies) userText += ' Exclude: ' + profile.allergies + '.';
-
   $('listUpdating').classList.remove('hidden');
   const before = listTotal();
+  try { await verifyAllMeals(); } catch(e) {} // use real recipe ingredients wherever we can get them
+  if (seq !== shopListSeq || !state.plan) return;
+  const profile = getProfile();
+  const pax = (parseInt(profile.adults) || 2) + (parseInt(profile.kids) || 0);
+  // Fridge items and pantry staples are already left out of each meal's to-buy list
+  const userText = 'Build the shopping list for ' + pax + ' people from these meals.\n\n' + shoppingBrief();
   try {
     const sl = await callAI(SHOPPING_PROMPT, userText, SHOPPING_SCHEMA, false);
     if (seq !== shopListSeq) return; // a newer update is on its way
@@ -2606,7 +2818,7 @@ function renderMealCards(animate) {
         const tags = have.map(x => '<span class="ing ing-have">✓ ' + escH(x) + '</span>').join('')
                    + pantry.map(x => '<span class="ing ing-pantry">✓ ' + escH(x) + '</span>').join('')
                    + need.map(x => '<span class="ing ing-need">+ ' + escH(x) + '</span>').join('');
-        ingHTML = '<div class="ingredients-label">Ingredients</div><div class="ing-tags">' + tags + '</div>'
+        ingHTML = '<div class="ingredients-label">Ingredients' + (m.rte ? ' <span class="ing-src">from the recipe</span>' : '') + '</div><div class="ing-tags">' + tags + '</div>'
           + (i === 0 ? '<div class="ing-key"><span class="k-have">In fridge</span><span class="k-pantry">Pantry</span><span class="k-need">To buy</span></div>' : '');
       }
       if (have.length) {
@@ -2647,6 +2859,8 @@ function renderMealCards(animate) {
       + dayHTML
       + '<p class="meal-desc">' + escH(m.description) + '</p>'
       + '<div class="badge-row">'
+      + (m.rte ? '<span class="badge badge-real" title="Ingredients read from the recipe on RecipeTin Eats">\u2713 Real recipe' + (m.rte.servings ? ' \u00B7 serves ' + escH(m.rte.servings) : '') + '</span>'
+               : '<span class="badge badge-guess" title="Ingredients are the AI\'s best guess">AI estimate</span>')
       + recentBadge
       + (m.makes_leftovers ? '<span class="badge badge-leftover">' + ICO.box + 'Makes leftovers</span>' : '')
       + (m.prep_ahead ? '<span class="badge badge-prep">' + ICO.bell + escH(m.prep_ahead) + '</span>' : '')
